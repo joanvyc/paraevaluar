@@ -45,6 +45,7 @@ function pars_args {
 				;;
 			-p|--plot)
 				PLOT=true;
+				command -v gnuplot >/dev/null || error_n_exit "Error: You are trying to plot data and gnuplot is not installed"
 				shift # past argument
 				;;
                         --help)
