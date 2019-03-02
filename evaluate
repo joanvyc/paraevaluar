@@ -7,7 +7,7 @@ NC='\033[0m'
 
 IGNORE_GOLDEN=false;
 VERBOSE=false;
-
+PLOT=false;
 N=3
 
 function show_error {
@@ -41,6 +41,10 @@ function pars_args {
 				;;
 			-v|--verbose)
 				VERBOSE=true;
+				shift # past argument
+				;;
+			-p|--plot)
+				PLOT=true;
 				shift # past argument
 				;;
                         --help)
@@ -152,10 +156,22 @@ function calculate_values {
 calculate_values $dir/time_original 0;
 echo "Program MaxE MinE AvgE SpeedUp MaxP MinP AvgP" | column -t;
 echo "Original ${MAX_E[0]} ${MIN_E[0]} ${AVG_E[0]} ${MAX_P[0]} ${MIN_P[0]} ${AVG_P[0]}" | column -t;
+$PLOT && echo "Original		${AVG_E[0]}" >> $dir/plotfile
 nu=1
 for programs in $OPTIMIZED;
 do
 	calculate_values $dir/time_update_$nu $nu;
 	echo "$programs ${MAX_E[${nu}]} ${MIN_E[${nu}]} ${AVG_E[${nu}]} $(echo "${AVG_E[0]} / ${AVG_E[${nu}]}" |bc -l | awk '{printf("%.4f\n", $1)}') ${MAX_P[${nu}]} ${MIN_P[${nu}]} ${AVG_P[${nu}]}" | column -t;
+	$PLOT && echo "${programs}	${AVG_E[${nu}]}" >> $dir/plotfile
 	nu=$((nu + 1));
 done
+
+$PLOT && echo "set boxwidth 0.75
+set style fill solid
+set auto y
+set title \"Average time comparaison\"
+plot \"$dir/plotfile\" using 2:xtic(1) with boxes
+set yr [0:GPVAL_DATA_Y_MAX]
+pause -1 \"=>Hit return to continue\""> $dir/plotscript
+$PLOT && gnuplot $dir/plotscript
+
