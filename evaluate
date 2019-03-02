@@ -67,6 +67,7 @@ function usage {
 	echo "Usage:	evaluate [OPTIONS]... original updated...";
 	echo "\t\t-i|--ignore-golden\tUse to avoid abort when output doesn't match."
         echo "\t\t-a|--arguments=ARGUMENT\tAppend ARGUMENT to the argument list."
+	echo "\t\t-p|--plots\tPlot average time of different versions."
 }
 
 pars_args $@;
