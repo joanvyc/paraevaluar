@@ -69,13 +69,27 @@ function pars_args {
 	ORIGINAL=$1;
 	shift;
 	OPTIMIZED=$@;
+
+	if [ ! -f $ORIGINAL ]; then
+		error_n_exit "Error: File not found \"${ORIGINAL}\"" 3;
+	fi
+
+	for program in $OPTIMIZED; do
+		if [ ! -f $program ]; then
+			error_n_exit "Error: File not found \"${program}\"" 3;
+		fi
+	done
+
 }
 
 function usage {
 	echo -e "Usage:	evaluate [OPTIONS]... original updated...";
-	echo -e "\t\t-i|--ignore-golden\tUse to avoid abort when output doesn't match."
-        echo -e "\t\t-a|--arguments=ARGUMENT\tAppend ARGUMENT to the argument list."
-	echo -e "\t\t-p|--plots\tPlot average time of different versions."
+	echo -e "\tOPTIONS:"
+	echo -e "\t\t-h|--help\t\tprint this usage."
+	echo -e "\t\t-N ITERATIONS\t\tspecify the number of iterations each binary will be executed."
+	echo -e "\t\t-i|--ignore-golden\tdon't abort when output doesn't match golden output."
+        echo -e "\t\t-a|--arguments=ARGUMENT\tappend ARGUMENT to the argument list."
+	echo -e "\t\t-p|--plots\t\tplot average time of different versions."
 }
 
 pars_args $@;
@@ -164,24 +178,36 @@ function calculate_values {
 }
 
 calculate_values $dir/time_original 0;
-echo "Program MaxE MinE AvgE SpeedUp MaxP MinP AvgP" | column -t;
-echo "Original ${MAX_E[0]} ${MIN_E[0]} ${AVG_E[0]} ${MAX_P[0]} ${MIN_P[0]} ${AVG_P[0]}" | column -t;
+echo "Original,${MAX_E[0]},${MIN_E[0]},${AVG_E[0]},-,${MAX_P[0]},${MIN_P[0]},${AVG_P[0]}" >> $dir/tablefile;
 $PLOT && echo "Original		${AVG_E[0]}" >> $dir/plotfile
 nu=1
 for programs in $OPTIMIZED;
 do
 	calculate_values $dir/time_update_$nu $nu;
-	echo "$programs ${MAX_E[${nu}]} ${MIN_E[${nu}]} ${AVG_E[${nu}]} $(echo "${AVG_E[0]} / ${AVG_E[${nu}]}" |bc -l | awk '{printf("%.4f\n", $1)}') ${MAX_P[${nu}]} ${MIN_P[${nu}]} ${AVG_P[${nu}]}" | column -t;
+	(echo -n "$programs,"
+       	echo -n "${MAX_E[${nu}]},"
+       	echo -n "${MIN_E[${nu}]},"
+       	echo -n "${AVG_E[${nu}]},"
+       	echo -n "$(echo "${AVG_E[0]} / ${AVG_E[${nu}]}" |bc -l | awk '{printf("%.4f\n", $1)}'),"
+       	echo -n "${MAX_P[${nu}]},"
+       	echo -n "${MIN_P[${nu}]},"
+	echo    "${AVG_P[${nu}]},") >> $dir/tablefile;
 	$PLOT && echo "${programs}	${AVG_E[${nu}]}" >> $dir/plotfile
 	nu=$((nu + 1));
 done
 
-$PLOT && echo "set boxwidth 0.75
-set style fill solid
-set auto y
-set title \"Average time comparaison\"
-plot \"$dir/plotfile\" using 2:xtic(1) with boxes
-set yr [0:GPVAL_DATA_Y_MAX]
-pause -1 \"=>Hit return to continue\""> $dir/plotscript
+echo -e "\n\n${GREEN}Results:${NC}";
+column -N Program,MaxE,MinE,AvgE,SpeedUp,MaxP,MinP,AvgP -ts, $dir/tablefile;
+echo -e "\n";
+
+$PLOT && echo "
+	set boxwidth 0.75
+	set style fill solid
+	set auto y
+	set title \"Average time comparaison\"
+	plot \"$dir/plotfile\" using 2:xtic(1) with boxes
+	set yr [0:GPVAL_DATA_Y_MAX]
+	pause -1 \"=> Hit return to continue\"
+" > $dir/plotscript
 $PLOT && gnuplot $dir/plotscript
 
