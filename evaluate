@@ -20,6 +20,13 @@ function error_n_exit {
 }
 
 function pars_args {
+	if [ $# -eq 0 ]
+		then
+			>&2 usage;
+			exit 1;
+	fi
+	
+			
         POSITIONAL=();
 	while [[ $# -gt 0 ]] && [[ "$(echo $1 | cut -c-1)" == "-" ]]; 
         do
@@ -43,13 +50,14 @@ function pars_args {
 				VERBOSE=true;
 				shift # past argument
 				;;
-                        --help)
+                        -h|--help)
                                 >&2 usage;
                                 exit 1;
                                 ;;
                         *)    # unknown option
 				show_error "Unknown option: $1";
-                                error_n_exit $(usage) 2;
+                                >&2 usage;
+				exit 2;
                                 ;;
                 esac;
         done
@@ -59,9 +67,9 @@ function pars_args {
 }
 
 function usage {
-	echo "Usage:	evaluate [OPTIONS]... original updated...";
-	echo "\t\t-i|--ignore-golden\tUse to avoid abort when output doesn't match."
-        echo "\t\t-a|--arguments=ARGUMENT\tAppend ARGUMENT to the argument list."
+	echo -e "Usage:	evaluate [OPTIONS]... original updated...";
+	echo -e "\t\t-i|--ignore-golden\tUse to avoid abort when output doesn't match."
+        echo -e "\t\t-a|--arguments=ARGUMENT\tAppend ARGUMENT to the argument list."
 }
 
 pars_args $@;
