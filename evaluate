@@ -7,7 +7,6 @@ NC='\033[0m'
 
 IGNORE_GOLDEN=false;
 VERBOSE=false;
-OUTPUT=$dir/output.dat
 PLOT=false;
 NOCLEANUP=false;
 N=3
@@ -61,7 +60,7 @@ function pars_args {
 				command -v gnuplot >/dev/null || error_n_exit "Error: You are trying to plot data and gnuplot is not installed"
 				shift # past argument
 				;;
-			--no-clueanup)
+			--no-cleanup)
 				NOCLEANUP=true;
 				shift # past argument
 				;;
@@ -115,6 +114,7 @@ do
 	mkdir $dir && break;
 	echo -e "${RED}==>Failed to create dir $dir";
 done
+if [ -z ${OUTPUT+x} ]; then OUTPUT="$dir/output.dat"; fi
 
 # Creating golden outpu
 echo -e "=> Generating golden output."
@@ -211,9 +211,8 @@ done
 
 echo -e "\n\n${GREEN}Results:${NC}";
 column -N Program,MaxE,MinE,AvgE,SpeedUp,MaxP,MinP,AvgP -ts, $dir/tablefile | tee --append $OUTPUT;
-echo >> $OUTPUT;
+echo "" >> $OUTPUT;
 echo -e "\n";
-
 
 $PLOT && echo "=> Creating plot.";
 $PLOT && echo "
