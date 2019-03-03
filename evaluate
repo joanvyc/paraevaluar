@@ -189,6 +189,7 @@ function calculate_values {
 	AVG_P[$2]=$(echo "${AVG_P[${2}]} / ${N}" | bc -l | awk '{printf("%.4f\n", $1)}');
 }
 
+echo -e "=> Computing evaluation.";
 calculate_values $dir/time_original 0;
 echo "Original,${MAX_E[0]},${MIN_E[0]},${AVG_E[0]},-,${MAX_P[0]},${MIN_P[0]},${AVG_P[0]}" >> $dir/tablefile;
 $PLOT && echo "Original		${AVG_E[0]}" >> $dir/plotfile
@@ -214,7 +215,7 @@ echo >> $OUTPUT;
 echo -e "\n";
 
 
-
+$PLOT && echo "=> Creating plot.";
 $PLOT && echo "
 	set boxwidth 0.75
 	set style fill solid
@@ -226,4 +227,6 @@ $PLOT && echo "
 " > $dir/plotscript
 $PLOT && gnuplot $dir/plotscript
 
+$NOCLEANUP || echo -e "=> Removing $dir.";
 $NOCLEANUP || rm -rf $dir;
+
