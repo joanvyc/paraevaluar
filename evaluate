@@ -7,7 +7,9 @@ NC='\033[0m'
 
 IGNORE_GOLDEN=false;
 VERBOSE=false;
+OUTPUT=$dir/output.dat
 PLOT=false;
+NOCLEANUP=false;
 N=3
 
 function show_error {
@@ -26,7 +28,6 @@ function pars_args {
 			exit 1;
 	fi
 	
-			
         POSITIONAL=();
 	while [[ $# -gt 0 ]] && [[ "$(echo $1 | cut -c-1)" == "-" ]]; 
         do
@@ -50,9 +51,18 @@ function pars_args {
 				VERBOSE=true;
 				shift # past argument
 				;;
+			-o|--output)
+				OUTPUT=$2;
+				shift # past argument
+				shift # past value
+				;;
 			-p|--plot)
 				PLOT=true;
 				command -v gnuplot >/dev/null || error_n_exit "Error: You are trying to plot data and gnuplot is not installed"
+				shift # past argument
+				;;
+			--no-clueanup)
+				NOCLEANUP=true;
 				shift # past argument
 				;;
                         -h|--help)
@@ -87,9 +97,11 @@ function usage {
 	echo -e "\tOPTIONS:"
 	echo -e "\t\t-h|--help\t\tprint this usage."
 	echo -e "\t\t-N ITERATIONS\t\tspecify the number of iterations each binary will be executed."
+	echo -e "\t\t-o|--output FILE\tappends the result of the evaluation to the FILE"
 	echo -e "\t\t-i|--ignore-golden\tdon't abort when output doesn't match golden output."
         echo -e "\t\t-a|--arguments=ARGUMENT\tappend ARGUMENT to the argument list."
 	echo -e "\t\t-p|--plots\t\tplot average time of different versions."
+	echo -e "\t\t--no-cleanup\t\tkeeps the intermediate files used by the program."
 }
 
 pars_args $@;
@@ -197,8 +209,11 @@ do
 done
 
 echo -e "\n\n${GREEN}Results:${NC}";
-column -N Program,MaxE,MinE,AvgE,SpeedUp,MaxP,MinP,AvgP -ts, $dir/tablefile;
+column -N Program,MaxE,MinE,AvgE,SpeedUp,MaxP,MinP,AvgP -ts, $dir/tablefile | tee --append $OUTPUT;
+echo >> $OUTPUT;
 echo -e "\n";
+
+
 
 $PLOT && echo "
 	set boxwidth 0.75
@@ -211,3 +226,4 @@ $PLOT && echo "
 " > $dir/plotscript
 $PLOT && gnuplot $dir/plotscript
 
+$NOCLEANUP || rm -rf $dir;
