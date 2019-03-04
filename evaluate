@@ -118,7 +118,7 @@ if [ -z ${OUTPUT+x} ]; then OUTPUT="$dir/output.dat"; fi
 
 # Creating golden outpu
 echo -e "=> Generating golden output."
-$ORIGINAL $ARGUMENTS > $dir/golden.out;
+$PWD/$ORIGINAL $ARGUMENTS > $dir/golden.out;
 
 # Runing time tests
 START=1
@@ -126,14 +126,14 @@ $VERBOSE || echo -e "=> Running $N time tests on original binary."
 for i in `seq $START $N`;
 do
 	$VERBOSE && echo -e "=> Running time test on original binary. (Test $i)";
-	/usr/bin/time -f "%e %P" -a -o $dir/time_original $ORIGINAL $ARGUMENTS > /dev/null;
+	/usr/bin/time -f "%e %P" -a -o $dir/time_original $PWD/$ORIGINAL $ARGUMENTS > /dev/null;
 done
 
 nu=1;
 for program in $OPTIMIZED;
 do
 	echo -e "=> Generating output of optimized binary $nu ($program).";
-	$program $ARGUMENTS > $dir/optimized_$nu.out;
+	$PWD/$program $ARGUMENTS > $dir/optimized_$nu.out;
 	echo -e "=> Checking output of optimized binary $nu ($program).";
 	if [[ "$(cat $dir/golden.out | sha256sum )" == "$(cat $dir/optimized_$nu.out | sha256sum )" ]];
 	then
@@ -153,7 +153,7 @@ do
 	for i in `seq $START $N`;
 	do
 		$VERBOSE && echo -e "=> Running time test on optimized binary $nu. (Test $i)";
-		/usr/bin/time -f "%e %P" -a -o $dir/time_update_$nu $program $ARGUMENTS > /dev/null;
+		/usr/bin/time -f "%e %P" -a -o $dir/time_update_$nu $PWD/$program $ARGUMENTS > /dev/null;
 	done
 	nu=$((nu + 1));
 done
@@ -198,12 +198,12 @@ for programs in $OPTIMIZED;
 do
 	calculate_values $dir/time_update_$nu $nu;
 	(echo -n "$programs,"
-       	echo -n "${MAX_E[${nu}]},"
-       	echo -n "${MIN_E[${nu}]},"
-       	echo -n "${AVG_E[${nu}]},"
-       	echo -n "$(echo "${AVG_E[0]} / ${AVG_E[${nu}]}" |bc -l | awk '{printf("%.4f\n", $1)}'),"
-       	echo -n "${MAX_P[${nu}]},"
-       	echo -n "${MIN_P[${nu}]},"
+    echo -n "${MAX_E[${nu}]},"
+    echo -n "${MIN_E[${nu}]},"
+    echo -n "${AVG_E[${nu}]},"
+    echo -n "$(echo "${AVG_E[0]} / ${AVG_E[${nu}]}" |bc -l | awk '{printf("%.4f\n", $1)}'),"
+    echo -n "${MAX_P[${nu}]},"
+    echo -n "${MIN_P[${nu}]},"
 	echo    "${AVG_P[${nu}]},") >> $dir/tablefile;
 	$PLOT && echo "${programs}	${AVG_E[${nu}]}" >> $dir/plotfile
 	nu=$((nu + 1));
