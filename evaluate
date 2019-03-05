@@ -162,8 +162,8 @@ function calculate_values {
 	FIRST=true;
 	while read line;
 	do 
-		CUR_E=$(echo $line | awk '{print $1}')
-		CUR_P=$(echo $line | awk '{gsub("[^[:digit:]]+"," "); print $2}')
+		CUR_E=$(echo $line | awk '{print $1}');
+		CUR_P=$(echo $line | awk '{gsub("[^[:digit:]]+"," "); print $2;}');
 		if $FIRST; 
 		then
 			AVG_E[$2]=$CUR_E;
