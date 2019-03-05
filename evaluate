@@ -162,8 +162,8 @@ function calculate_values {
 	FIRST=true;
 	while read line;
 	do 
-		CUR_E=$(echo $line | awk '{print $1}');
-		CUR_P=$(echo $line | awk '{gsub("[^[:digit:]]+"," "); print $2;}');
+		CUR_E=$(echo ${line}       | awk '{print $1}');
+		CUR_P=$(echo ${line//[%]/} | awk '{print "(" $1 "*" $2 ") / 100"}' | bc -l);
 		if $FIRST; 
 		then
 			AVG_E[$2]=$CUR_E;
@@ -184,33 +184,46 @@ function calculate_values {
 			AVG_P[$2]=$(echo "${CUR_P} + ${AVG_P[${2}]}" |bc -l);
 		fi
 	done < $1;
-	
+
 	AVG_E[$2]=$(echo "${AVG_E[${2}]} / ${N}" | bc -l | awk '{printf("%.4f\n", $1)}');
 	AVG_P[$2]=$(echo "${AVG_P[${2}]} / ${N}" | bc -l | awk '{printf("%.4f\n", $1)}');
 }
 
 echo -e "=> Computing evaluation.";
 calculate_values $dir/time_original 0;
-echo "Original,${MAX_E[0]},${MIN_E[0]},${AVG_E[0]},-,${MAX_P[0]},${MIN_P[0]},${AVG_P[0]}" >> $dir/tablefile;
+(
+echo -n "Original,";
+echo -n "${MAX_E[0]},";
+echo -n "${MIN_E[0]},";
+echo -n "${AVG_E[0]},";
+echo -n "-,";
+echo -n "${MAX_P[0]}" | awk '{printf("%.2f,", $1)}';
+echo -n "${MIN_P[0]}" | awk '{printf("%.2f,", $1)}';
+echo -n "${AVG_P[0]},";
+echo    "-";
+) >> $dir/tablefile;
 $PLOT && echo "Original		${AVG_E[0]}" >> $dir/plotfile
 nu=1
 for programs in $OPTIMIZED;
 do
 	calculate_values $dir/time_update_$nu $nu;
-	(echo -n "$programs,"
-    echo -n "${MAX_E[${nu}]},"
-    echo -n "${MIN_E[${nu}]},"
-    echo -n "${AVG_E[${nu}]},"
-    echo -n "$(echo "${AVG_E[0]} / ${AVG_E[${nu}]}" |bc -l | awk '{printf("%.4f\n", $1)}'),"
-    echo -n "${MAX_P[${nu}]},"
-    echo -n "${MIN_P[${nu}]},"
-	echo    "${AVG_P[${nu}]},") >> $dir/tablefile;
+	(
+	echo -n "$programs,";
+	echo -n "${MAX_E[${nu}]},";
+	echo -n "${MIN_E[${nu}]},";
+	echo -n "${AVG_E[${nu}]},";
+	echo    "${AVG_E[0]} / ${AVG_E[${nu}]}" | bc -l | awk '{printf("%.4f,", $1)}';
+	echo -n "${MAX_P[${nu}]}" | awk '{printf("%.2f,", $1)}';
+	echo -n "${MIN_P[${nu}]}" | awk '{printf("%.2f,", $1)}';
+	echo -n "${AVG_P[${nu}]},";
+	echo    "${AVG_P[0]} / ${AVG_P[${nu}]}" | bc -l | awk '{printf("%.4f\n", $1)}';
+	) >> $dir/tablefile;
 	$PLOT && echo "${programs}	${AVG_E[${nu}]}" >> $dir/plotfile
 	nu=$((nu + 1));
 done
 
 echo -e "\n\n${GREEN}Results:${NC}";
-column -N Program,MaxE,MinE,AvgE,SpeedUp,MaxP,MinP,AvgP -ts, $dir/tablefile | tee --append $OUTPUT;
+column -N Program,MaxE,MinE,AvgE,SpeedUpE,MaxCPU,MinCPU,AvgCPU,SpeedUpCPU -ts, $dir/tablefile | tee --append $OUTPUT;
 echo "" >> $OUTPUT;
 echo -e "\n";
 

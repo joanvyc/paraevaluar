@@ -1,4 +1,5 @@
 BINS=pi.O0 pi.O1 pi.O2 pi.O3 pi.Ofast
+
 all: $(BINS) 
 
 pi.O0: pi.c
