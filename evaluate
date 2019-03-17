@@ -66,6 +66,13 @@ function pars_args {
 				NOCLEANUP=true;
 				shift # past argument
 				;;
+			--clean)
+				echo -e "=> Cleaning working directory.";
+				rm -rf evaldir-*;
+				echo -e "=> Done.";
+				exit 0;
+				shift # past argument
+				;;
                         -h|--help)
                                 >&2 usage;
                                 exit 1;
@@ -103,7 +110,10 @@ function usage {
         echo -e "\t\t-a|--arguments=ARGUMENT\tappend ARGUMENT to the argument list."
 	echo -e "\t\t-p|--plots\t\tplot average time of different versions."
 	echo -e "\t\t--no-cleanup\t\tkeeps the intermediate files used by the program."
+	echo -e "\t\t--clean\t\tdeletes all evaldir in the current directory."
 }
+
+pars_args $@;
 
 # Creating working directory
 while : ; 
@@ -116,7 +126,6 @@ do
 done
 if [ -z ${OUTPUT+x} ]; then OUTPUT="$dir/output.dat"; fi
 
-pars_args $@;
 
 # Creating golden outpu
 echo -e "=> Generating golden output."
