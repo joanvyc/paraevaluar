@@ -2,7 +2,7 @@ Package: evaluate
 Version: 1.0-1
 Section: base
 Priority: optional
-Depends:
+Depends: coreutils, gawk, time, groff-base, bc
 Maintainer: Joan Vinyals - joanvyc@ieee.org
 Description: evaluate
  Is a tool aimed to automatize the performance analisys procedures.
