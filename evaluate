@@ -105,7 +105,6 @@ function usage {
 	echo -e "\t\t--no-cleanup\t\tkeeps the intermediate files used by the program."
 }
 
-
 # Creating working directory
 while : ; 
 do
@@ -193,17 +192,27 @@ function calculate_values {
 }
 
 echo -e "=> Computing evaluation.";
+(
+echo ".pl 50"
+echo ".TS H"
+echo "allbox, center;"
+echo "l l l l l l l l l.";
+echo "."
+echo -e "Program\tMaxE\tMinE\tAvgE\tSpeedUpE\tMaxCPU\tMinCPU\tAvgCPU\tSpeedUpCPU"
+echo ".TH"
+) > $dir/tablefile;  
+
 calculate_values $dir/time_original 0;
 (
-echo -n "Original,";
-echo -n "${MAX_E[0]},";
-echo -n "${MIN_E[0]},";
-echo -n "${AVG_E[0]},";
-echo -n "-,";
-echo -n "${MAX_P[0]}" | awk '{printf("%.2f,", $1)}';
-echo -n "${MIN_P[0]}" | awk '{printf("%.2f,", $1)}';
-echo -n "${AVG_P[0]},";
-echo    "-";
+echo -e -n "Original\t";
+echo -e -n "${MAX_E[0]}\t";
+echo -e -n "${MIN_E[0]}\t";
+echo -e -n "${AVG_E[0]}\t";
+echo -e -n "\t";
+echo -e -n "${MAX_P[0]}" | awk '{printf("%.2f\t", $1)}';
+echo -e -n "${MIN_P[0]}" | awk '{printf("%.2f\t", $1)}';
+echo -e -n "${AVG_P[0]}\t";
+echo -e    "\t";
 ) >> $dir/tablefile;
 $PLOT && echo "Original		${AVG_E[0]}" >> $dir/plotfile
 nu=1
@@ -211,23 +220,24 @@ for programs in $OPTIMIZED;
 do
 	calculate_values $dir/time_update_$nu $nu;
 	(
-	echo -n "$programs,";
-	echo -n "${MAX_E[${nu}]},";
-	echo -n "${MIN_E[${nu}]},";
-	echo -n "${AVG_E[${nu}]},";
-	echo    "${AVG_E[0]} / ${AVG_E[${nu}]}" | bc -l | awk '{printf("%.4f,", $1)}';
-	echo -n "${MAX_P[${nu}]}" | awk '{printf("%.2f,", $1)}';
-	echo -n "${MIN_P[${nu}]}" | awk '{printf("%.2f,", $1)}';
-	echo -n "${AVG_P[${nu}]},";
+	echo -e -n "$programs\t";
+	echo -e -n "${MAX_E[${nu}]}\t";
+	echo -e -n "${MIN_E[${nu}]}\t";
+	echo -e -n "${AVG_E[${nu}]}\t";
+	echo -e    "${AVG_E[0]} / ${AVG_E[${nu}]}" | bc -l | awk '{printf("%.4f\t", $1)}';
+	echo -e -n "${MAX_P[${nu}]}" | awk '{printf("%.2f\t", $1)}';
+	echo -e -n "${MIN_P[${nu}]}" | awk '{printf("%.2f\t", $1)}';
+	echo -e -n "${AVG_P[${nu}]}\t";
 	echo    "${AVG_P[0]} / ${AVG_P[${nu}]}" | bc -l | awk '{printf("%.4f\n", $1)}';
 	) >> $dir/tablefile;
 	$PLOT && echo "${programs}	${AVG_E[${nu}]}" >> $dir/plotfile
 	nu=$((nu + 1));
 done
+echo ".TE" >> $dir/tablefile
 
 echo -e "\n\n${GREEN}Results:${NC}";
-column -N Program,MaxE,MinE,AvgE,SpeedUpE,MaxCPU,MinCPU,AvgCPU,SpeedUpCPU -ts, $dir/tablefile | tee --append $OUTPUT;
-echo "" >> $OUTPUT;
+tbl $dir/tablefile | groff -T ascii 2>/dev/null | awk '{ if (0!=length($1)) print $0}' | tee --append $OUTPUT;
+echo -e "\n" >> $OUTPUT;
 echo -e "\n";
 
 $PLOT && echo "=> Creating plot.";
