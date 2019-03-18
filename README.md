@@ -17,10 +17,14 @@ Usage:	evaluate [OPTIONS]... original updated...
 		-a|--arguments=ARGUMENT	append ARGUMENT to the argument list.
 		-p|--plots		plot average time of different versions.
 		--no-cleanup		keeps the intermediate files used by the program.
-
+		--clean			deletes all evaldir in the current directory.
 ```
 ## Dependencies
+The dependencies needed are coreutils, gawk, time, groff-base, bc
+
+Other dependencies for extended features:
 In order to plot data gnuplot is required to be installed.
+
 
 ## Example
 
@@ -34,11 +38,11 @@ Then run the command to evaluate the code, execute 4 times each binary, pass the
 ```
 We get the following output:
 ```
-Results:
+Results for pi.O0:
 +---------+------+------+--------+----------+--------+--------+--------+------------+
 |Program  | MaxE | MinE | AvgE   | SpeedUpE | MaxCPU | MinCPU | AvgCPU | SpeedUpCPU |
 +---------+------+------+--------+----------+--------+--------+--------+------------+
-|Original | 0.18 | 0.17 | 0.1733 |          | 0.18   | 0.17   | 0.1722 |            |
+|Original | 0.18 | 0.17 | 0.1733 |-         | 0.18   | 0.17   | 0.1722 |-           |
 +---------+------+------+--------+----------+--------+--------+--------+------------+
 |pi.O1    | 0.09 | 0.09 | 0.0900 | 1.9256   | 0.09   | 0.09   | 0.0894 | 1.9262     |
 +---------+------+------+--------+----------+--------+--------+--------+------------+
