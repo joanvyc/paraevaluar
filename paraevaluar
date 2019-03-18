@@ -224,11 +224,11 @@ echo -e -n "Original\t";
 echo -e -n "${MAX_E[0]}\t";
 echo -e -n "${MIN_E[0]}\t";
 echo -e -n "${AVG_E[0]}\t";
-echo -e -n "\t";
+echo -e -n "-\t";
 echo -e -n "${MAX_P[0]}" | awk '{printf("%.2f\t", $1)}';
 echo -e -n "${MIN_P[0]}" | awk '{printf("%.2f\t", $1)}';
 echo -e -n "${AVG_P[0]}\t";
-echo -e    "\t";
+echo -e    "-\t";
 ) >> $dir/tablefile;
 $PLOT && echo "Original		${AVG_E[0]}" >> $dir/plotfile
 nu=1
@@ -251,7 +251,7 @@ do
 done
 echo ".TE" >> $dir/tablefile
 
-echo -e "\n\n${GREEN}Results:${NC}";
+echo -e "\n\n${GREEN}Results for ${ORIGINAL}:${NC}";
 tbl $dir/tablefile | groff -T ascii 2>/dev/null | awk '{ if (0!=length($1)) print $0}' | tee --append $OUTPUT;
 echo -e "\n" >> $OUTPUT;
 echo -e "\n";
