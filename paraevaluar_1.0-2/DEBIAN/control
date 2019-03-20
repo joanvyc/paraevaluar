@@ -1,8 +1,8 @@
 Package: paraevaluar
-Version: 1.0-1
+Version: 1.0-2
 Section: base
 Priority: optional
-Depends: coreutils, gawk, time, groff-base, bc
+Depends: coreutils, awk, time, groff-base, bc
 Maintainer: Joan Vinyals - joanvyc@ieee.org
-Description: evaluate
+Description: paraevaluar
  Is a tool aimed to automatize the performance analisys procedures.

@@ -102,7 +102,7 @@ function pars_args {
 }
 
 function usage {
-	echo -e "Usage:	evaluate [OPTIONS]... original updated...";
+	echo -e "Usage:	paraevaluar [OPTIONS]... original [updated]...";
 	echo -e "\tOPTIONS:"
 	echo -e "\t\t-h|--help\t\tprint this usage."
 	echo -e "\t\t-N ITERATIONS\t\tspecify the number of iterations each binary will be executed."
@@ -137,10 +137,10 @@ if [[ $? -eq 130 ]]; then error_n_exit "\nInterrupt signal received" 130; fi
 
 # Runing time tests
 START=1
-$VERBOSE || echo -e "=> Running $N time tests on original binary."
+echo -e "=> Running $N time tests on original binary."
 for i in `seq $START $N`;
 do
-	$VERBOSE && echo -e "=> Running time test on original binary. (Test $i)";
+	$VERBOSE && echo -e "\t==> Running time test on original binary. (Test $i)";
 	/usr/bin/time -f "%e %P" -a -o $dir/time_original $PWD/$ORIGINAL $ARGUMENTS > /dev/null;
 	if [[ $? -eq 130 ]]; then error_n_exit "\nInterrupt signal received" 130; fi
 done
@@ -166,10 +166,10 @@ do
 
 	fi
 
-	$VERBOSE || echo -e "=> Running $N time tests on original binary.";
+    echo -e "=> Running $N time tests on original binary.";
 	for i in `seq $START $N`;
 	do
-		$VERBOSE && echo -e "=> Running time test on optimized binary $nu. (Test $i)";
+		$VERBOSE && echo -e "\t==> Running time test on optimized binary $nu. (Test $i)";
 		/usr/bin/time -f "%e %P" -a -o $dir/time_update_$nu $PWD/$program $ARGUMENTS > /dev/null;
 		if [[ $? -eq 130 ]]; then error_n_exit "\nInterrupt signal received" 130; fi
 	done
@@ -205,6 +205,8 @@ function calculate_values {
 
 	AVG_E[$2]=$(echo "${AVG_E[${2}]} / ${N}" | bc -l | awk '{printf("%.4f\n", $1)}');
 	AVG_P[$2]=$(echo "${AVG_P[${2}]} / ${N}" | bc -l | awk '{printf("%.4f\n", $1)}');
+    if (( $(echo "${AVG_E} <= 0" |bc -l) )); then error_n_exit "That was too quick." 5; fi
+    if (( $(echo "${AVG_P} <= 0" |bc -l) )); then error_n_exit "That was too quick." 5; fi
 }
 
 echo -e "=> Computing evaluation.";
