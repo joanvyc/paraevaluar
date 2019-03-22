@@ -19,8 +19,8 @@ function error_n_exit {
 	$NOCLEANUP || echo -e "=> Removing $dir.";
 	$NOCLEANUP || rm -rf $dir;
 	trap - SIGINT
-        show_error "$1";
-        exit $2;
+    show_error "$1";
+    exit $2;
 }
 
 function pars_args {
@@ -30,61 +30,61 @@ function pars_args {
 			exit 1;
 	fi
 	
-        POSITIONAL=();
+    POSITIONAL=();
 	while [[ $# -gt 0 ]] && [[ "$(echo $1 | cut -c-1)" == "-" ]]; 
-        do
-                key="$1";
-                case $key in
-			-N)
-				N=$2;
-				shift # past argument
-				shift # past value
-				;;
-                        -i|--ignore-golden)
-                                IGNORE_GOLDEN=true;
-                                shift # past argument
-                                ;;
-			-a|--arguments)
-				ARGUMENTS="$ARGUMENTS $2";
-				shift # past argument
-				shift # past value
-				;;
-			-v|--verbose)
-				VERBOSE=true;
-				shift # past argument
-				;;
-			-o|--output)
-				OUTPUT=$2;
-				shift # past argument
-				shift # past value
-				;;
-			-p|--plot)
-				PLOT=true;
-				command -v gnuplot >/dev/null || error_n_exit "Error: You are trying to plot data and gnuplot is not installed"
-				shift # past argument
-				;;
-			--no-cleanup)
-				NOCLEANUP=true;
-				shift # past argument
-				;;
-			--clean)
-				echo -e "=> Cleaning working directory.";
-				rm -rf evaldir-*;
-				echo -e "=> Done.";
-				exit 0;
-				shift # past argument
-				;;
-                        -h|--help)
-                                >&2 usage;
-                                exit 1;
-                                ;;
-                        *)    # unknown option
-				show_error "Unknown option: $1";
-                                >&2 usage;
-				exit 2;
-                                ;;
-                esac;
-        done
+    do
+        key="$1";
+        case $key in
+        -N)
+            N=$2;
+            shift # past argument
+            shift # past value
+            ;;
+        -i|--ignore-golden)
+            IGNORE_GOLDEN=true;
+            shift # past argument
+            ;;
+        -a|--arguments)
+            ARGUMENTS="$ARGUMENTS $2";
+            shift # past argument
+            shift # past value
+            ;;
+        -v|--verbose)
+            VERBOSE=true;
+            shift # past argument
+            ;;
+        -o|--output)
+            OUTPUT=$2;
+            shift # past argument
+            shift # past value
+            ;;
+        -p|--plot)
+            PLOT=true;
+            command -v gnuplot >/dev/null || error_n_exit "Error: You are trying to plot data and gnuplot is not installed"
+            shift # past argument
+            ;;
+        --no-cleanup)
+            NOCLEANUP=true;
+            shift # past argument
+            ;;
+        --clean)
+            echo -e "=> Cleaning working directory.";
+            rm -rf evaldir-*;
+            echo -e "=> Done.";
+            exit 0;
+            shift # past argument
+            ;;
+        -h|--help)
+            >&2 usage;
+            exit 1;
+            ;;
+        *)    # unknown option
+            show_error "Unknown option: $1";
+            >&2 usage;
+            exit 2;
+            ;;
+        esac;
+    done
 	ORIGINAL=$1;
 	shift;
 	OPTIMIZED=$@;
@@ -133,7 +133,10 @@ if [ -z ${OUTPUT+x} ]; then OUTPUT="$dir/output.dat"; fi
 # Creating golden outpu
 echo -e "=> Generating golden output."
 $PWD/$ORIGINAL $ARGUMENTS > $dir/golden.out;
-if [[ $? -eq 130 ]]; then error_n_exit "\nInterrupt signal received" 130; fi
+err=$?;
+if [[ $err -eq 130 ]]; then error_n_exit "\nInterrupt signal received" 130; fi
+if [[ $err -ne 1 ]]; then error_n_exit "The execution of $ORIGINAL finishied with exit code $err" $err; fi
+
 
 # Runing time tests
 START=1
