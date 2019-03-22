@@ -10,6 +10,7 @@ VERBOSE=false;
 PLOT=false;
 NOCLEANUP=false;
 N=3
+GNUTIME=/usr/bin/time
 
 function show_error {
 	>&2 echo -e "${RED}${1}${NC}";
@@ -32,59 +33,64 @@ function pars_args {
 	
     POSITIONAL=();
 	while [[ $# -gt 0 ]] && [[ "$(echo $1 | cut -c-1)" == "-" ]]; 
-    do
-        key="$1";
-        case $key in
-        -N)
-            N=$2;
-            shift # past argument
-            shift # past value
-            ;;
-        -i|--ignore-golden)
-            IGNORE_GOLDEN=true;
-            shift # past argument
-            ;;
-        -a|--arguments)
-            ARGUMENTS="$ARGUMENTS $2";
-            shift # past argument
-            shift # past value
-            ;;
-        -v|--verbose)
-            VERBOSE=true;
-            shift # past argument
-            ;;
-        -o|--output)
-            OUTPUT=$2;
-            shift # past argument
-            shift # past value
-            ;;
-        -p|--plot)
-            PLOT=true;
-            command -v gnuplot >/dev/null || error_n_exit "Error: You are trying to plot data and gnuplot is not installed"
-            shift # past argument
-            ;;
-        --no-cleanup)
-            NOCLEANUP=true;
-            shift # past argument
-            ;;
-        --clean)
-            echo -e "=> Cleaning working directory.";
-            rm -rf evaldir-*;
-            echo -e "=> Done.";
-            exit 0;
-            shift # past argument
-            ;;
-        -h|--help)
-            >&2 usage;
-            exit 1;
-            ;;
-        *)    # unknown option
-            show_error "Unknown option: $1";
-            >&2 usage;
-            exit 2;
-            ;;
-        esac;
-    done
+        do
+                key="$1";
+                case $key in
+			-N)
+				N=$2;
+				shift # past argument
+				shift # past value
+				;;
+            -i|--ignore-golden)
+                IGNORE_GOLDEN=true;
+                shift # past argument
+                ;;
+			-a|--arguments)
+				ARGUMENTS="$ARGUMENTS $2";
+				shift # past argument
+				shift # past value
+				;;
+			-v|--verbose)
+				VERBOSE=true;
+				shift # past argument
+				;;
+			-o|--output)
+				OUTPUT=$2;
+				shift # past argument
+				shift # past value
+				;;
+			-p|--plot)
+				PLOT=true;
+				command -v gnuplot >/dev/null || error_n_exit "Error: You are trying to plot data and gnuplot is not installed"
+				shift # past argument
+				;;
+            -t|--time-path)
+                GNUTIME="$2"
+                shift # past argument
+                shift # past value
+                ;;
+			--no-cleanup)
+				NOCLEANUP=true;
+				shift # past argument
+				;;
+			--clean)
+				echo -e "=> Cleaning working directory.";
+				rm -rf evaldir-*;
+				echo -e "=> Done.";
+				exit 0;
+				shift # past argument
+				;;
+            -h|--help)
+                >&2 usage;
+                exit 1;
+                ;;
+            *)    # unknown option
+	     		show_error "Unknown option: $1";
+                >&2 usage;
+				exit 2;
+                ;;
+            esac;
+        done
 	ORIGINAL=$1;
 	shift;
 	OPTIMIZED=$@;
@@ -108,8 +114,9 @@ function usage {
 	echo -e "\t\t-N ITERATIONS\t\tspecify the number of iterations each binary will be executed."
 	echo -e "\t\t-o|--output FILE\tappends the result of the evaluation to the FILE"
 	echo -e "\t\t-i|--ignore-golden\tdon't abort when output doesn't match golden output."
-        echo -e "\t\t-a|--arguments=ARGUMENT\tappend ARGUMENT to the argument list."
+    echo -e "\t\t-a|--arguments=ARGUMENT\tappend ARGUMENT to the argument list."
 	echo -e "\t\t-p|--plots\t\tplot average time of different versions."
+    echo -e "\t\t-t|--time-path\t\tspecify where is the path of GNU/Time(Default:/usr/bin/time)"
 	echo -e "\t\t--no-cleanup\t\tkeeps the intermediate files used by the program."
 	echo -e "\t\t--clean\t\t\tdeletes all evaldir in the current directory."
 }
@@ -144,7 +151,7 @@ echo -e "=> Running $N time tests on original binary."
 for i in `seq $START $N`;
 do
 	$VERBOSE && echo -e "\t==> Running time test on original binary. (Test $i)";
-	/usr/bin/time -f "%e %P" -a -o $dir/time_original $PWD/$ORIGINAL $ARGUMENTS > /dev/null;
+	$GNUTIME -f "%e %P" -a -o $dir/time_original $PWD/$ORIGINAL $ARGUMENTS > /dev/null;
 	if [[ $? -eq 130 ]]; then error_n_exit "\nInterrupt signal received" 130; fi
 done
 
@@ -173,7 +180,7 @@ do
 	for i in `seq $START $N`;
 	do
 		$VERBOSE && echo -e "\t==> Running time test on optimized binary $nu. (Test $i)";
-		/usr/bin/time -f "%e %P" -a -o $dir/time_update_$nu $PWD/$program $ARGUMENTS > /dev/null;
+		$GNUTIME -f "%e %P" -a -o $dir/time_update_$nu $PWD/$program $ARGUMENTS > /dev/null;
 		if [[ $? -eq 130 ]]; then error_n_exit "\nInterrupt signal received" 130; fi
 	done
 	nu=$((nu + 1));
