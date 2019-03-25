@@ -116,6 +116,7 @@ function parse_arguments {
                 shift; # past argument
                 shift; # past value
                 ;;
+            ## --clean-all)
             --clean)
                 echo -e "=> Cleaning working directory.";
                 rm -rf $dir;
@@ -283,7 +284,12 @@ then
     show_warning "This name already exists using ${NAME}";
 fi
 
-echo $NAME >> $dir/names;
+if $ORIGINAL;
+then
+    echo -e "$NAME\n$(cat $dir/names)" > $dir/names;
+else
+    echo $NAME >> $dir/names;
+fi
 
 if $ORIGINAL;
 then
