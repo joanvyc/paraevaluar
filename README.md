@@ -1,14 +1,14 @@
 
-# evaluate
+# paraevaluar
 
-## What is evaluate?
+## What is paraevaluar?
 
-Evaluate is a performance analysis script that allows developers to compare an original version of an application to optimized ones, checking that the output is the same.
+Paraevaluar is a performance analysis script that allows developers to compare an original version of an application to optimized ones, checking that the output is the same.
 
 ## Usage
 
 ```
-Usage:	evaluate [OPTIONS]... original updated...
+Usage:	paraevaluar [OPTIONS]... original [updated]...
 	OPTIONS:
 		-h|--help		print this usage.
 		-N ITERATIONS		specify the number of iterations each binary will be executed.
@@ -16,8 +16,10 @@ Usage:	evaluate [OPTIONS]... original updated...
 		-i|--ignore-golden	don't abort when output doesn't match golden output.
 		-a|--arguments=ARGUMENT	append ARGUMENT to the argument list.
 		-p|--plots		plot average time of different versions.
+		-t|--time-path		specify where is the path of GNU/Time(Default:/usr/bin/time)
 		--no-cleanup		keeps the intermediate files used by the program.
 		--clean			deletes all evaldir in the current directory.
+
 ```
 ## Dependencies
 The dependencies needed are coreutils, gawk, time, groff-base, bc
@@ -34,7 +36,7 @@ make all
 ```
 Then run the command to evaluate the code, execute 4 times each binary, pass the argument 3333 to the programs.
 ```
-../evaluate -N 4 -a 3333 -p ./pi.O0 ./pi.O1 ./pi.O2 ./pi.O3 ./pi.Ofast  #suposing evaluate is not installed
+../paraevaluar -N 4 -a 3333 -p pi.O0 pi.O1 pi.O2 pi.O3 pi.Ofast  #paraevaluar is not installed
 ```
 We get the following output:
 ```
