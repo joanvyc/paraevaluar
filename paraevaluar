@@ -12,6 +12,7 @@ function set_default_settings {
     dir=evaldir;
     PREFIX=$PWD;
     IGNORE_GOLDEN=false
+    GNUTIME=/usr/bin/time
 }
 
 function error_n_exit {
@@ -28,21 +29,28 @@ function show_warning {
 }
 
 function usage {
-	echo -e "Usage:	paraevaluar [OPTIONS]... original [updated]...";
-	echo -e "\tOPTIONS:"
-	echo -e "\t\t-h|--help\t\tprint this usage."
-	echo -e "\t\t-N ITERATIONS\t\tspecify the number of iterations each binary will be executed."
-	echo -e "\t\t-o|--output FILE\tappends the result of the evaluation to the FILE"
-	echo -e "\t\t-i|--ignore-golden\tdon't abort when output doesn't match golden output."
-	echo -e "\t\t-p|--plots\t\tplot average time of different versions."
-	echo -e "\t\t--no-cleanup\t\tkeeps the intermediate files used by the program."
-	echo -e "\t\t--clean\t\t\tdeletes all evaldir in the current directory."
+    echo -e "Usage:	paraevaluar [OPTIONS]... program";
+    echo -e "\tOPTIONS:";
+    echo -e "\t\t-N|--iterations ITERATIONS\tspecify the number of iterations each binary will be executeds.";
+    echo -e "\t\t-i|--ignore-golden\t\tdon't abort when output doesn't match golden output";
+    echo -e "\t\t-prefix PREFIX\t\t\tspecify the path of th program (default \$PWD)";
+    echo -e "\t\t-d|--directory EVALDIR\t\tsets the paraevaluar working directory to EVALDIR";
+    echo -e "\t\t-name NAME\t\t\tsets to the execution the alias NAME";
+    echo -e "\t\t-original\t\t\tforces the program to be treated as the original";
+    echo -e "\t\t-t|--time-path PATH\t\tto specify the path of time (default /usr/bin/time)";
+    echo -e "\t\t-v|--verbose\t\t\tverbose";
+    echo -e "\t\t-report [REPORT OPTIONS]\tdisplays the report of the evaluations";
+    echo -e "\t\t-o|--output FILE\t\tappends the result of the evaluation to the FILE";
+    echo -e "\t\t--clean\t\t\t\tdeletes all evaldir in the current directory";
+    echo -e "\t\t-h|--help\t\t\tprint this usage";
+    echo -e "\tREPORT OPTIONS:";
+    echo -e "\t\tNot implemented yet.";
 }
 
 function parse_arguments {
     if [[ $# -eq 0 ]];
     then
-        2> usage;
+        >&2 usage;
         exit 0;
     fi;
 
@@ -50,15 +58,6 @@ function parse_arguments {
     do
         key="$1";
         case $key in
-            -v|--verbose)
-                VERBOSE=true;
-                shift; # past argument
-                ;;
-            -o|--output)
-                OUTPUT=$2;
-                shift; # past argument
-                shift; # past value
-                ;;
             -N|--iterations)
                 N=$2;
                 shift; # past argument
@@ -67,21 +66,6 @@ function parse_arguments {
             -i|--ignore-golden)
                 IGNORE_GOLDEN=true;
                 shift; # past argument
-                ;;
-            --clean)
-                echo -e "=> Cleaning working directory.";
-                rm -rf evaldir;
-                echo -e "=> Done.";
-                exit 0;
-                ;;
-            -p|--plot)
-				PLOT=true;
-				command -v gnuplot >/dev/null || error_n_exit "Error: You are trying to plot data and gnuplot is not installed"
-				shift # past argument
-				;;
-            -h|--help)
-                >&2 usage;
-                exit 0;
                 ;;
             --prefix)
                 PREFIX=$2;
@@ -102,8 +86,32 @@ function parse_arguments {
                 ORIGINAL=true;
                 shift; # past argument
                 ;;
+            -t|--time-path)
+                GNUTIME=$2;
+                shift # past argument
+                shift # past value
+                ;;
+            -v|--verbose)
+                VERBOSE=true;
+                shift; # past argument
+                ;;
             --report)
                 display_table;
+                exit 0;
+                ;;
+            -o|--output)
+                OUTPUT=$2;
+                shift; # past argument
+                shift; # past value
+                ;;
+            --clean)
+                echo -e "=> Cleaning working directory.";
+                rm -rf evaldir;
+                echo -e "=> Done.";
+                exit 0;
+                ;;
+            -h|--help)
+                >&2 usage;
                 exit 0;
                 ;;
             *)
