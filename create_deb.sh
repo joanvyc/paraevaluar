@@ -1,4 +1,4 @@
-mkdir -p paraevaluar_1.0-2/usr/local/bin
-cp paraevaluar paraevaluar_1.0-2/usr/local/bin/
+mkdir -p paraevaluar_2.0-1/usr/local/bin
+cp paraevaluar paraevaluar_2.0-1/usr/local/bin/
 
-dpkg-deb --build paraevaluar_1.0-2
+dpkg-deb --build paraevaluar_2.0-1
