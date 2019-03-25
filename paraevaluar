@@ -12,11 +12,23 @@ function set_default_settings {
     dir=evaldir;
     PREFIX=$PWD;
     IGNORE_GOLDEN=false
+    REPORT=false;
+    CLEANUP=false;
     GNUTIME=/usr/bin/time
 }
 
 function error_n_exit {
     show_error "$1";
+    if $CLEANUP;
+    then
+        if $ORIGINAL;
+        then
+            rm -rf $dir;
+        else
+            rm -f $NAME.out $NAME.time; 
+            sed -i "/\\<$NAME\\>/d" $dir/names;
+        fi
+    fi
     exit $2;
 }
 
@@ -96,8 +108,8 @@ function parse_arguments {
                 shift; # past argument
                 ;;
             --report)
-                display_table;
-                exit 0;
+                REPORT=true;
+                shift; # past argument
                 ;;
             -o|--output)
                 OUTPUT=$2;
@@ -106,7 +118,7 @@ function parse_arguments {
                 ;;
             --clean)
                 echo -e "=> Cleaning working directory.";
-                rm -rf evaldir;
+                rm -rf $dir;
                 echo -e "=> Done.";
                 exit 0;
                 ;;
@@ -123,6 +135,7 @@ function parse_arguments {
     done
 
     if [ -z ${NAME+x} ]; then NAME=$1; fi;
+    if [ -z ${OUTPUT+x} ]; then OUTPUT=$dir/output; fi    
     PROGRAM=$@;
 }
 
@@ -154,9 +167,11 @@ function calculate_values {
 	done < $1;
 
 	AVG_E[$2]=$(echo "${AVG_E[${2}]} / ${N}" | bc -l | awk '{printf("%.4f\n", $1)}');
+    CLEANUP=false;
     if (( $(echo "${AVG_E} <= 0" |bc -l) )); then error_n_exit "That was too quick." 5; fi
 
 	AVG_P[$2]=$(echo "${AVG_P[${2}]} / ${N}" | bc -l | awk '{printf("%.4f\n", $1)}');
+    CLEANUP=false;
     if (( $(echo "${AVG_P} <= 0" |bc -l) )); then error_n_exit "That was too quick." 5; fi
 }
 
@@ -210,12 +225,13 @@ function create_table {
 
 function display_table {
     create_table;
-    tbl $dir/tablefile | groff -T ascii 2>/dev/null | awk '{ if (0!=length($0)) print $0}';
+    tbl $dir/tablefile | groff -T ascii 2>/dev/null | awk '{ if (0!=length($0)) print $0}' | tee --append $OUTPUT;
     echo -e "\n";
+    echo -e "\n" >> $OUTPUT;
 }
 
 # Seting trap for interrupt handling.
-trap -- 'error_n_exit "\nInterrupt signal recived" 130' SIGINT;
+trap -- 'CLEANUP=true; error_n_exit "\nInterrupt signal recived" 130' SIGINT;
 
 declare_colors;
 
@@ -223,6 +239,13 @@ set_default_settings;
 
 # Parsing arguments
 parse_arguments $@;
+PATH=$PREFIX:$PATH;
+
+if $REPORT;
+then
+    display_table;
+    exit 0;
+fi;
 
 # Create dir
 if [ -d $dir ];
@@ -236,6 +259,7 @@ else
     then
         touch $dir/names;
     else
+        CLEANUP=true
         error_n_exit "Failed to create directory." 2;
     fi
 fi
@@ -264,14 +288,16 @@ echo $NAME >> $dir/names;
 if $ORIGINAL;
 then
     echo -e "=> Generating golden output.";
-    $PREFIX/$PROGRAM > $dir/golden.out;
+    $PROGRAM > $dir/golden.out;
     err=$?;
+    CLEANUP=true;
     if [[ $err -eq 130 ]]; then error_n_exit "\nInterrupt signal recived." 130; fi;
     if [[ $err -ne 0 ]];   then error_n_exit "\nProcess ended with exit code: $err."; fi;
 else
     echo -e "=> Checking golden output.";
-    $PREFIX/$PROGRAM > $dir/$name.out;
+    $PROGRAM > $dir/$name.out;
     err=$?;
+    CLEANUP=true;
     if [[ $err -eq 130 ]]; then error_n_exit "\nInterrupt signal recived." 130; fi;
     if [[ $err -ne 0 ]];   then error_n_exit "\nProcess ended with exit code: $err."; fi;
     if [[ "$(cat $dir/golden.out | sha256sum )" == "$(cat $dir/$name.out | sha256sum )" ]];
@@ -280,9 +306,10 @@ else
     else    
         if $IGNORE_GOLDEN;
         then
-            echo -e "${YELLOW}==> Waring: Output of optimized code number $nu does not match golden output.${NC}"
+            show_warning "Output of $NAME does not match golden output.";
         else
-            echo -e "${RED}==> Error: Output of optimized code number $nu does not match golden output.${NC}"
+            show_error "Output of $NAME does not match golden output.";
+            CLEANUP=true;
             error_n_exit "Aborting due to output missmatch" 3;
         fi  
     fi
@@ -291,7 +318,7 @@ fi
 for i in `seq 1 $N`;
 do
     $VERBOSE && echo -e "\t==> Running time test on binary (Iteration $i).";
-    /usr/bin/time -f "%e %P" -a -o $dir/$NAME.time $PREFIX/$PROGRAM > $dir/null;
+    /usr/bin/time -f "%e %P" -a -o $dir/$NAME.time $PROGRAM > $dir/null;
     err=$?;
     if [[ $err -eq 130 ]]; then error_n_exit "\nInterrupt signal recived." 130; fi;
     if [[ $err -ne 0 ]];   then error_n_exit "\nProcess ended with exit code: $err."; fi;
