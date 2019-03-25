@@ -11,6 +11,12 @@ function set_default_settings {
     N=3
     dir=evaldir;
     PREFIX=$PWD;
+    IGNORE_GOLDEN=false
+}
+
+function error_n_exit {
+    show_error "$1";
+    exit $2;
 }
 
 function show_error {
@@ -36,7 +42,7 @@ function usage {
 function parse_arguments {
     if [[ $# -eq 0 ]];
     then
-        display_table;
+        2> usage;
         exit 0;
     fi;
 
@@ -96,6 +102,10 @@ function parse_arguments {
                 ORIGINAL=true;
                 shift; # past argument
                 ;;
+            --report)
+                display_table;
+                exit 0;
+                ;;
             *)
                 show_error "Unknown option: $1";
                 >&2 usage;
@@ -154,13 +164,13 @@ function create_table {
     ) > $dir/tablefile;
 
     nu=0;
-    while read line;
+    while read name;
     do
         if [[ $nu -eq 0 ]];
         then
-            calculate_values $dir/$line.time $nu;
+            calculate_values $dir/$name.time $nu;
             (   
-            echo -e -n "$line\t";
+            echo -e -n "$name\t";
             echo -e -n "${MAX_E[${nu}]}\t";
             echo -e -n "${MIN_E[${nu}]}\t";
             echo -e -n "${AVG_E[${nu}]}\t";
@@ -171,14 +181,15 @@ function create_table {
             echo -e    "-\t";
             ) >> $dir/tablefile;
         else
-            calculate_values $dir/$line.time $nu;
-            echo -e -n "$line\t" >> $dir/tablefile;
-            (echo -e -n "${MAX_E[${nu}]}\t";
+            calculate_values $dir/$name.time $nu;
+            (
+            echo -e -n "$name\t";
+            echo -e -n "${MAX_E[${nu}]}\t";
             echo -e -n "${MIN_E[${nu}]}\t";
             echo -e -n "${AVG_E[${nu}]}\t";
-            echo -e -n "${AVG_E[0]} / ${AVG_E[${nu}]}" | bc -l | awk '{printf("%.4f\t", $1)}';
-            echo -e -n "${MAX_P[${nu}]}" | awk '{printf("%.2f\t", $1)}';
-            echo -e -n "${MIN_P[${nu}]}" | awk '{printf("%.2f\t", $1)}';
+            echo       "${AVG_E[0]} / ${AVG_E[${nu}]}" | bc -l | awk '{printf("%.4f\t", $1)}';
+            echo -e -n "${MAX_P[${nu}]}" | awk '{printf("%.4f\t", $1)}';
+            echo -e -n "${MIN_P[${nu}]}" | awk '{printf("%.4f\t", $1)}';
             echo -e -n "${AVG_P[${nu}]}\t";
             echo       "${AVG_P[0]} / ${AVG_P[${nu}]}" | bc -l | awk '{printf("%.4f\n", $1)}';
             ) >> $dir/tablefile;
@@ -206,7 +217,7 @@ set_default_settings;
 parse_arguments $@;
 
 # Create dir
-if [ -f $dir ];
+if [ -d $dir ];
 then
     echo -e "=> Using existent directory.";
     if [ -z ${ORIGINAL+x} ]; then ORIGINAL=false; fi;
@@ -221,20 +232,13 @@ else
     fi
 fi
 
-if $ORIGINAL;
-then
-    echo -e "=> Generating golden output.";
-    $PREFIX/$PROGRAM > $dir/golden.out;
-    err=$?;
-    if [[ $err -eq 130 ]]; then error_n_exit "\nInterrupt signal recived." 130; fi;
-    if [[ $err -ne 0 ]];   then error_n_exit "\nProcess ended with exit code: $err."; fi;
-fi
-
+UNDER="";
 NAME_POST="";
-while grep ${NAME}${NAME_POST} $dir/names > /dev/null;
+while grep ${NAME}${UNDER}${NAME_POST} $dir/names > /dev/null;
 do
     if [ "${NAME_POST}" == "" ];
     then
+        UNDER="_";
         NAME_POST=1;
     else
         NAME_POST=$((NAME_POST + 1));
@@ -243,11 +247,38 @@ done
 
 if [ ! "${NAME_POST}" == "" ];
 then
-    show_warning "This name already exists using ${NAME}${NAME_POST}";
-    NAME=${NAME}${NAME_POST};
+    NAME=${NAME}_${NAME_POST};
+    show_warning "This name already exists using ${NAME}";
 fi
 
 echo $NAME >> $dir/names;
+
+if $ORIGINAL;
+then
+    echo -e "=> Generating golden output.";
+    $PREFIX/$PROGRAM > $dir/golden.out;
+    err=$?;
+    if [[ $err -eq 130 ]]; then error_n_exit "\nInterrupt signal recived." 130; fi;
+    if [[ $err -ne 0 ]];   then error_n_exit "\nProcess ended with exit code: $err."; fi;
+else
+    echo -e "=> Checking golden output.";
+    $PREFIX/$PROGRAM > $dir/$name.out;
+    err=$?;
+    if [[ $err -eq 130 ]]; then error_n_exit "\nInterrupt signal recived." 130; fi;
+    if [[ $err -ne 0 ]];   then error_n_exit "\nProcess ended with exit code: $err."; fi;
+    if [[ "$(cat $dir/golden.out | sha256sum )" == "$(cat $dir/$name.out | sha256sum )" ]];
+    then
+        echo -e "${GREEN}==> Output match.${NC}";
+    else    
+        if $IGNORE_GOLDEN;
+        then
+            echo -e "${YELLOW}==> Waring: Output of optimized code number $nu does not match golden output.${NC}"
+        else
+            echo -e "${RED}==> Error: Output of optimized code number $nu does not match golden output.${NC}"
+            error_n_exit "Aborting due to output missmatch" 3;
+        fi  
+    fi
+fi
 
 for i in `seq 1 $N`;
 do
