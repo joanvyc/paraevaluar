@@ -1,104 +1,24 @@
 #!/bin/bash
 
-RED='\033[1;31m'
-GREEN='\033[1;32m'
-YELLOW='\033[1;33m'
-NC='\033[0m'
+function declare_colors {
+    RED='\033[1;31m'
+    GREEN='\033[1;32m'
+    YELLOW='\033[1;33m'
+    NC='\033[0m'
+}
 
-IGNORE_GOLDEN=false;
-VERBOSE=false;
-PLOT=false;
-NOCLEANUP=false;
-N=3
+function set_default_settings {
+    N=3
+    dir=evaldir;
+    PREFIX=$PWD;
+}
 
 function show_error {
-	>&2 echo -e "${RED}${1}${NC}";
+    >&2 echo -e "${RED}=> ERROR: ${1}${NC}";
 }
 
-function error_n_exit {	
-	$NOCLEANUP || echo -e "=> Removing $dir.";
-	$NOCLEANUP || rm -rf $dir;
-	trap - SIGINT
-        show_error "$1";
-        exit $2;
-}
-
-function pars_args {
-	if [ $# -eq 0 ]
-		then
-			>&2 usage;
-			exit 1;
-	fi
-	
-        POSITIONAL=();
-	while [[ $# -gt 0 ]] && [[ "$(echo $1 | cut -c-1)" == "-" ]]; 
-        do
-                key="$1";
-                case $key in
-			-N)
-				N=$2;
-				shift # past argument
-				shift # past value
-				;;
-                        -i|--ignore-golden)
-                                IGNORE_GOLDEN=true;
-                                shift # past argument
-                                ;;
-			-a|--arguments)
-				ARGUMENTS="$ARGUMENTS $2";
-				shift # past argument
-				shift # past value
-				;;
-			-v|--verbose)
-				VERBOSE=true;
-				shift # past argument
-				;;
-			-o|--output)
-				OUTPUT=$2;
-				shift # past argument
-				shift # past value
-				;;
-			-p|--plot)
-				PLOT=true;
-				command -v gnuplot >/dev/null || error_n_exit "Error: You are trying to plot data and gnuplot is not installed"
-				shift # past argument
-				;;
-			--no-cleanup)
-				NOCLEANUP=true;
-				shift # past argument
-				;;
-			--clean)
-				echo -e "=> Cleaning working directory.";
-				rm -rf evaldir-*;
-				echo -e "=> Done.";
-				exit 0;
-				shift # past argument
-				;;
-                        -h|--help)
-                                >&2 usage;
-                                exit 1;
-                                ;;
-                        *)    # unknown option
-				show_error "Unknown option: $1";
-                                >&2 usage;
-				exit 2;
-                                ;;
-                esac;
-        done
-	ORIGINAL=$1;
-	shift;
-	OPTIMIZED=$@;
-
-	if [ ! -f $ORIGINAL ]; then
-		error_n_exit "Error: File not found \"${ORIGINAL}\"" 3;
-	fi
-
-	for program in $OPTIMIZED; do
-		if [ ! -f $program ]; then
-			error_n_exit "Error: File not found \"${program}\"" 3;
-		fi
-	done
-
+function show_warning {
+    >&2 echo -e "${YELLOW}=> WARNING: ${1}${NC}";
 }
 
 function usage {
@@ -108,73 +28,85 @@ function usage {
 	echo -e "\t\t-N ITERATIONS\t\tspecify the number of iterations each binary will be executed."
 	echo -e "\t\t-o|--output FILE\tappends the result of the evaluation to the FILE"
 	echo -e "\t\t-i|--ignore-golden\tdon't abort when output doesn't match golden output."
-        echo -e "\t\t-a|--arguments=ARGUMENT\tappend ARGUMENT to the argument list."
 	echo -e "\t\t-p|--plots\t\tplot average time of different versions."
 	echo -e "\t\t--no-cleanup\t\tkeeps the intermediate files used by the program."
 	echo -e "\t\t--clean\t\t\tdeletes all evaldir in the current directory."
 }
 
-trap -- 'error_n_exit "\nInterrupt signal received" 130' SIGINT;
+function parse_arguments {
+    if [[ $# -eq 0 ]];
+    then
+        display_table;
+        exit 0;
+    fi;
 
-pars_args $@;
+    while [[ $# -gt 0 ]] && [[ "$(echo $1 | cut -c-1)" == "-" ]];
+    do
+        key="$1";
+        case $key in
+            -v|--verbose)
+                VERBOSE=true;
+                shift; # past argument
+                ;;
+            -o|--output)
+                OUTPUT=$2;
+                shift; # past argument
+                shift; # past value
+                ;;
+            -N|--iterations)
+                N=$2;
+                shift; # past argument
+                shift; # past value
+                ;;
+            -i|--ignore-golden)
+                IGNORE_GOLDEN=true;
+                shift; # past argument
+                ;;
+            --clean)
+                echo -e "=> Cleaning working directory.";
+                rm -rf evaldir;
+                echo -e "=> Done.";
+                exit 0;
+                ;;
+            -p|--plot)
+				PLOT=true;
+				command -v gnuplot >/dev/null || error_n_exit "Error: You are trying to plot data and gnuplot is not installed"
+				shift # past argument
+				;;
+            -h|--help)
+                >&2 usage;
+                exit 0;
+                ;;
+            --prefix)
+                PREFIX=$2;
+                shift; # past argument
+                shift; # past value
+                ;;
+            -d|--directory)
+                dir=$2;
+                shift; # past argument
+                shift; # past value
+                ;;
+            --name)
+                NAME=$2;
+                shift; # past argument
+                shift; # past value
+                ;;
+            --original)
+                ORIGINAL=true;
+                shift; # past argument
+                ;;
+            *)
+                show_error "Unknown option: $1";
+                >&2 usage;
+                exit 1;
+                ;;
+        esac
+    done
 
-# Creating working directory
-while : ; 
-do
-	name=$(date '+%F %T' | sha256sum | cut -c-10);
-	dir=evaldir-$name;
-	echo -e "=> Creating working dir $dir";
-	mkdir $dir && break;
-	echo -e "${RED}==>Failed to create dir $dir";
-done
-if [ -z ${OUTPUT+x} ]; then OUTPUT="$dir/output.dat"; fi
-
-
-# Creating golden outpu
-echo -e "=> Generating golden output."
-$PWD/$ORIGINAL $ARGUMENTS > $dir/golden.out;
-if [[ $? -eq 130 ]]; then error_n_exit "\nInterrupt signal received" 130; fi
-
-# Runing time tests
-START=1
-echo -e "=> Running $N time tests on original binary."
-for i in `seq $START $N`;
-do
-	$VERBOSE && echo -e "\t==> Running time test on original binary. (Test $i)";
-	/usr/bin/time -f "%e %P" -a -o $dir/time_original $PWD/$ORIGINAL $ARGUMENTS > /dev/null;
-	if [[ $? -eq 130 ]]; then error_n_exit "\nInterrupt signal received" 130; fi
-done
-
-nu=1;
-for program in $OPTIMIZED;
-do
-	echo -e "=> Generating output of optimized binary $nu ($program).";
-	$PWD/$program $ARGUMENTS > $dir/optimized_$nu.out;
-	if [[ $? -eq 130 ]]; then error_n_exit "\nInterrupt signal received" 130; fi
-	echo -e "=> Checking output of optimized binary $nu ($program).";
-	if [[ "$(cat $dir/golden.out | sha256sum )" == "$(cat $dir/optimized_$nu.out | sha256sum )" ]];
-	then
-		echo -e "${GREEN}==> Output match.${NC}";
-	else	
-		if $IGNORE_GOLDEN;
-		then
-			echo -e "${YELLOW}==> Waring: Output of optimized code number $nu does not match golden output.${NC}"
-		else
-			echo -e "${RED}==> Error: Output of optimized code number $nu does not match golden output.${NC}"
-			error_n_exit "Aborting due to output missmatch" 3;
-		fi
-
-	fi
-
-    echo -e "=> Running $N time tests on original binary.";
-	for i in `seq $START $N`;
-	do
-		$VERBOSE && echo -e "\t==> Running time test on optimized binary $nu. (Test $i)";
-		/usr/bin/time -f "%e %P" -a -o $dir/time_update_$nu $PWD/$program $ARGUMENTS > /dev/null;
-		if [[ $? -eq 130 ]]; then error_n_exit "\nInterrupt signal received" 130; fi
-	done
-	nu=$((nu + 1));
-done
+    if [ -z ${NAME+x} ]; then NAME=$1; fi;
+    PROGRAM=$@;
+}
 
 function calculate_values {
 	FIRST=true;
@@ -204,72 +136,125 @@ function calculate_values {
 	done < $1;
 
 	AVG_E[$2]=$(echo "${AVG_E[${2}]} / ${N}" | bc -l | awk '{printf("%.4f\n", $1)}');
-	AVG_P[$2]=$(echo "${AVG_P[${2}]} / ${N}" | bc -l | awk '{printf("%.4f\n", $1)}');
     if (( $(echo "${AVG_E} <= 0" |bc -l) )); then error_n_exit "That was too quick." 5; fi
+
+	AVG_P[$2]=$(echo "${AVG_P[${2}]} / ${N}" | bc -l | awk '{printf("%.4f\n", $1)}');
     if (( $(echo "${AVG_P} <= 0" |bc -l) )); then error_n_exit "That was too quick." 5; fi
 }
 
-echo -e "=> Computing evaluation.";
-(
-echo ".pl 50"
-echo ".TS H"
-echo "allbox, center;"
-echo "l l l l l l l l l.";
-echo "."
-echo -e "Program\tMaxE\tMinE\tAvgE\tSpeedUpE\tMaxCPU\tMinCPU\tAvgCPU\tSpeedUpCPU"
-echo ".TH"
-) > $dir/tablefile;  
+function create_table {
+    (
+    echo ".pl 50";
+    echo ".TS H" ;
+    echo "allbox, center;";
+    echo "l l l l l l l l l.";
+    echo ".";
+    echo -e "Program\tMaxE\tMinE\tAvgE\tSpeedUpE\tMaxCPU\tMinCPU\tAvgCPU\tSpeedUpCPU"
+    echo ".TH";
+    ) > $dir/tablefile;
 
-calculate_values $dir/time_original 0;
-(
-echo -e -n "Original\t";
-echo -e -n "${MAX_E[0]}\t";
-echo -e -n "${MIN_E[0]}\t";
-echo -e -n "${AVG_E[0]}\t";
-echo -e -n "-\t";
-echo -e -n "${MAX_P[0]}" | awk '{printf("%.2f\t", $1)}';
-echo -e -n "${MIN_P[0]}" | awk '{printf("%.2f\t", $1)}';
-echo -e -n "${AVG_P[0]}\t";
-echo -e    "-\t";
-) >> $dir/tablefile;
-$PLOT && echo "Original		${AVG_E[0]}" >> $dir/plotfile
-nu=1
-for programs in $OPTIMIZED;
+    nu=0;
+    while read line;
+    do
+        if [[ $nu -eq 0 ]];
+        then
+            calculate_values $dir/$line.time $nu;
+            (   
+            echo -e -n "$line\t";
+            echo -e -n "${MAX_E[${nu}]}\t";
+            echo -e -n "${MIN_E[${nu}]}\t";
+            echo -e -n "${AVG_E[${nu}]}\t";
+            echo -e -n "-\t";
+            echo -e -n "${MAX_P[${nu}]}" | awk '{printf("%.2f\t", $1)}';
+            echo -e -n "${MIN_P[${nu}]}" | awk '{printf("%.2f\t", $1)}';
+            echo -e -n "${AVG_P[${nu}]}\t";
+            echo -e    "-\t";
+            ) >> $dir/tablefile;
+        else
+            calculate_values $dir/$line.time $nu;
+            echo -e -n "$line\t" >> $dir/tablefile;
+            (echo -e -n "${MAX_E[${nu}]}\t";
+            echo -e -n "${MIN_E[${nu}]}\t";
+            echo -e -n "${AVG_E[${nu}]}\t";
+            echo -e -n "${AVG_E[0]} / ${AVG_E[${nu}]}" | bc -l | awk '{printf("%.4f\t", $1)}';
+            echo -e -n "${MAX_P[${nu}]}" | awk '{printf("%.2f\t", $1)}';
+            echo -e -n "${MIN_P[${nu}]}" | awk '{printf("%.2f\t", $1)}';
+            echo -e -n "${AVG_P[${nu}]}\t";
+            echo       "${AVG_P[0]} / ${AVG_P[${nu}]}" | bc -l | awk '{printf("%.4f\n", $1)}';
+            ) >> $dir/tablefile;
+        fi
+        nu=$((nu + 1));
+    done < $dir/names;
+
+    echo ".TE" >> $dir/tablefile
+}
+
+function display_table {
+    create_table;
+    tbl $dir/tablefile | groff -T ascii 2>/dev/null | awk '{ if (0!=length($0)) print $0}';
+    echo -e "\n";
+}
+
+# Seting trap for interrupt handling.
+trap -- 'error_n_exit "\nInterrupt signal recived" 130' SIGINT;
+
+declare_colors;
+
+set_default_settings;
+
+# Parsing arguments
+parse_arguments $@;
+
+# Create dir
+if [ -f $dir ];
+then
+    echo -e "=> Using existent directory.";
+    if [ -z ${ORIGINAL+x} ]; then ORIGINAL=false; fi;
+else
+    ORIGINAL=true;
+    echo -e "=> Creating working directory.";
+    if mkdir -p $dir;
+    then
+        touch $dir/names;
+    else
+        error_n_exit "Failed to create directory." 2;
+    fi
+fi
+
+if $ORIGINAL;
+then
+    echo -e "=> Generating golden output.";
+    $PREFIX/$PROGRAM > $dir/golden.out;
+    err=$?;
+    if [[ $err -eq 130 ]]; then error_n_exit "\nInterrupt signal recived." 130; fi;
+    if [[ $err -ne 0 ]];   then error_n_exit "\nProcess ended with exit code: $err."; fi;
+fi
+
+NAME_POST="";
+while grep ${NAME}${NAME_POST} $dir/names > /dev/null;
 do
-	calculate_values $dir/time_update_$nu $nu;
-	(
-	echo -e -n "$programs\t";
-	echo -e -n "${MAX_E[${nu}]}\t";
-	echo -e -n "${MIN_E[${nu}]}\t";
-	echo -e -n "${AVG_E[${nu}]}\t";
-	echo -e    "${AVG_E[0]} / ${AVG_E[${nu}]}" | bc -l | awk '{printf("%.4f\t", $1)}';
-	echo -e -n "${MAX_P[${nu}]}" | awk '{printf("%.2f\t", $1)}';
-	echo -e -n "${MIN_P[${nu}]}" | awk '{printf("%.2f\t", $1)}';
-	echo -e -n "${AVG_P[${nu}]}\t";
-	echo    "${AVG_P[0]} / ${AVG_P[${nu}]}" | bc -l | awk '{printf("%.4f\n", $1)}';
-	) >> $dir/tablefile;
-	$PLOT && echo "${programs}	${AVG_E[${nu}]}" >> $dir/plotfile
-	nu=$((nu + 1));
+    if [ "${NAME_POST}" == "" ];
+    then
+        NAME_POST=1;
+    else
+        NAME_POST=$((NAME_POST + 1));
+    fi
 done
-echo ".TE" >> $dir/tablefile
 
-echo -e "\n\n${GREEN}Results for ${ORIGINAL}:${NC}";
-tbl $dir/tablefile | groff -T ascii 2>/dev/null | awk '{ if (0!=length($1)) print $0}' | tee --append $OUTPUT;
-echo -e "\n" >> $OUTPUT;
-echo -e "\n";
+if [ ! "${NAME_POST}" == "" ];
+then
+    show_warning "This name already exists using ${NAME}${NAME_POST}";
+    NAME=${NAME}${NAME_POST};
+fi
 
-$PLOT && echo "=> Creating plot.";
-$PLOT && echo "
-	set boxwidth 0.75
-	set style fill solid
-	set auto y
-	set title \"Average time comparaison\"
-	plot \"$dir/plotfile\" using 2:xtic(1) with boxes
-	set yr [0:GPVAL_DATA_Y_MAX]
-	pause -1 \"=> Hit return to continue\"
-" > $dir/plotscript
-$PLOT && gnuplot $dir/plotscript
+echo $NAME >> $dir/names;
 
-$NOCLEANUP || echo -e "=> Removing $dir.";
-$NOCLEANUP || rm -rf $dir;
-trap - SIGINT
+for i in `seq 1 $N`;
+do
+    $VERBOSE && echo -e "\t==> Running time test on binary (Iteration $i).";
+    /usr/bin/time -f "%e %P" -a -o $dir/$NAME.time $PREFIX/$PROGRAM > $dir/null;
+    err=$?;
+    if [[ $err -eq 130 ]]; then error_n_exit "\nInterrupt signal recived." 130; fi;
+    if [[ $err -ne 0 ]];   then error_n_exit "\nProcess ended with exit code: $err."; fi;
+done
+
