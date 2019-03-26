@@ -25,7 +25,8 @@ function error_n_exit {
         then
             rm -rf $dir;
         else
-            rm -f $NAME.out $NAME.time; 
+            mv -f $NAME.out error.out
+            rm -f $NAME.time; 
             sed -i "/\\<$NAME\\>/d" $dir/names;
         fi
     fi
@@ -116,12 +117,17 @@ function parse_arguments {
                 shift; # past argument
                 shift; # past value
                 ;;
-            ## --clean-all)
-            --clean)
+            --clean-all)
                 echo -e "=> Cleaning working directory.";
                 rm -rf $dir;
                 echo -e "=> Done.";
                 exit 0;
+                ;;
+            --clean)
+                NAME=$2;
+                ORIGINAL=false
+                CLEANUP=true
+                error_n_exit "Deleting $2 entry." 0
                 ;;
             -h|--help)
                 >&2 usage;
@@ -144,8 +150,8 @@ function calculate_values {
 	FIRST=true;
 	while read line;
 	do 
-		CUR_E=$(echo ${line}       | awk '{print $1}');
-		CUR_P=$(echo ${line//[%]/} | awk '{print "(" $1 "*" $2 ") / 100"}' | bc -l);
+		CUR_E=$(echo ${line} | awk '{print $1}');
+		CUR_P=$(echo ${line} | cut -d % -f 1 | awk '{print "(" $1 "*" $2 ") / 100"}' | bc -l);
 		if $FIRST; 
 		then
 			AVG_E[$2]=$CUR_E;
@@ -286,7 +292,10 @@ fi
 
 if $ORIGINAL;
 then
-    echo -e "$NAME\n$(cat $dir/names)" > $dir/names;
+    mv $dir/names $dir/names.back
+    echo -e "$NAME" > $dir/names;
+    cat $dir/names.back >> $dir/names;
+    rm -f $dir/names.back;
 else
     echo $NAME >> $dir/names;
 fi
@@ -301,12 +310,12 @@ then
     if [[ $err -ne 0 ]];   then error_n_exit "\nProcess ended with exit code: $err."; fi;
 else
     echo -e "=> Checking golden output.";
-    $PROGRAM > $dir/$name.out;
+    $PROGRAM > $dir/$NAME.out;
     err=$?;
     CLEANUP=true;
     if [[ $err -eq 130 ]]; then error_n_exit "\nInterrupt signal recived." 130; fi;
     if [[ $err -ne 0 ]];   then error_n_exit "\nProcess ended with exit code: $err."; fi;
-    if [[ "$(cat $dir/golden.out | sha256sum )" == "$(cat $dir/$name.out | sha256sum )" ]];
+    if [[ "$(cat $dir/golden.out | sha256sum )" == "$(cat $dir/$NAME.out | sha256sum )" ]];
     then
         echo -e "${GREEN}==> Output match.${NC}";
     else    

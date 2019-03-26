@@ -1,6 +1,7 @@
 Package: paraevaluar
 Version: 2.0-1
 Section: base
+Architecture: all
 Priority: optional
 Depends: coreutils, sed, awk, time, groff-base, bc
 Maintainer: Joan Vinyals - joanvyc@ieee.org
