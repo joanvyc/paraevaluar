@@ -25,8 +25,8 @@ function error_n_exit {
         then
             rm -rf $dir;
         else
-            mv -f $NAME.out error.out
-            rm -f $NAME.time; 
+            mv -f $dir/$NAME.out $dir/error.out
+            rm -f $dir/$NAME.time; 
             sed -i "/\\<$NAME\\>/d" $dir/names;
         fi
     fi
@@ -189,7 +189,7 @@ function create_table {
     echo "allbox, center;";
     echo "l l l l l l l l l.";
     echo ".";
-    echo -e "Program\tMaxE\tMinE\tAvgE\tSpeedUpE\tMaxCPU\tMinCPU\tAvgCPU\tSpeedUpCPU"
+    echo -e "Program\tMaxE (s)\tMinE (s)\tAvgE (s)\tSpeedUpE\tMaxCPU (s)\tMinCPU (s)\tAvgCPU (s)\tSpeedUpCPU"
     echo ".TH";
     ) > $dir/tablefile;
 
@@ -308,6 +308,7 @@ then
     CLEANUP=true;
     if [[ $err -eq 130 ]]; then error_n_exit "\nInterrupt signal recived." 130; fi;
     if [[ $err -ne 0 ]];   then error_n_exit "\nProcess ended with exit code: $err."; fi;
+    cp $dir/golden.out $dir/$NAME.out;
 else
     echo -e "=> Checking golden output.";
     $PROGRAM > $dir/$NAME.out;
