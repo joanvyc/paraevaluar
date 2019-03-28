@@ -8,25 +8,25 @@ signed char a[25480], b[25480], c[25480];
 signed char string[100];
 
 
-#define SPECIALIZE_init_memo_DIVIDE( n, memo_size ) \
-const int size_memo_DIVIDE##n = memo_size;          \
-unsigned memo_q_DIVIDE##n [ memo_size ];            \
-unsigned memo_r_DIVIDE##n [ memo_size ];            \
-void init_memo_DIVIDE##n ()                         \
-{                                                   \
-    int k;                                          \
-                                                    \
-    for ( k = 0; k < size_memo_DIVIDE##n ; k++ ) {          \
-        memo_q_DIVIDE##n [k] = k / n;                       \
-        memo_r_DIVIDE##n [k] = k - memo_q_DIVIDE##n [k] * n;\
-    }                                                       \
+#define SPECIALIZE_init_memo_DIVIDE( n, memo_size )           \
+const int size_memo_DIVIDE##n = memo_size;                    \
+unsigned memo_q_DIVIDE##n [ memo_size ];                      \
+unsigned memo_r_DIVIDE##n [ memo_size ];                      \
+void init_memo_DIVIDE##n ()                                   \
+{                                                             \
+    int k;                                                    \
+                                                              \
+    for ( k = 0; k < size_memo_DIVIDE##n ; k++ ) {            \
+        memo_q_DIVIDE##n [k] = k / n;                         \
+        memo_r_DIVIDE##n [k] = k - memo_q_DIVIDE##n [k] * n;  \
+    }                                                         \
 }
 
-SPECIALIZE_init_memo_DIVIDE ( 5,  0x1000 );
+SPECIALIZE_init_memo_DIVIDE ( 5,  50 );
 
-SPECIALIZE_init_memo_DIVIDE ( 25, 0x1000 );
+SPECIALIZE_init_memo_DIVIDE ( 25, 250 );
 
-SPECIALIZE_init_memo_DIVIDE ( 239,0x1000 );
+SPECIALIZE_init_memo_DIVIDE ( 239,2390 );
 
 #define SPECIALIZE_DIVIDE( n ) \
 void DIVIDE##n ( signed char *x )   \
@@ -53,82 +53,82 @@ SPECIALIZE_DIVIDE( 239 );
 
 
 void LONGDIV( signed char *x, int n )
-{                                                
+{
     int j, k;
     unsigned q, r, u;
     long v;
 
-    if( n < 6553 )                               
-    {                                            
-        r = 0;                                   
-        for( k = 0; k <= N4; k++ )               
-        {                                        
-            u = r * 10 + x[k];                   
-            q = u / n;                           
-            r = u - q * n;                       
-            x[k] = q;                            
-        }                                       
-    }                                            
-    else                                         
-    {                                            
-        r = 0;                                   
-        for( k = 0; k <= N4; k++ )              
-        {                                       
-            if( r < 6553 )                      
-            {                                   
-                u = r * 10 + x[k];              
-                q = u / n;                      
-                r = u - q * n;                  
-            }                                   
-            else                                
-            {                                   
-                v = (long) r * 10 + x[k];       
-                q = v / n;                      
-                r = v - q * n;                  
-            }                                   
-            x[k] = q;                           
-        }                                       
-    }                                           
+    if( n < 6553 )
+    {
+        r = 0;
+        for( k = 0; k <= N4; k++ )
+        {
+            u = r * 10 + x[k];
+            q = u / n;
+            r = u - q * n;
+            x[k] = q;
+        }
+    }
+    else
+    {
+        r = 0;
+        for( k = 0; k <= N4; k++ )
+        {
+            if( r < 6553 )
+            {
+                u = r * 10 + x[k];
+                q = u / n;
+                r = u - q * n;
+            }
+            else
+            {
+                v = (long) r * 10 + x[k];
+                q = v / n;
+                r = v - q * n;
+            }
+            x[k] = q;
+        }
+    }
 }
 
-void MULTIPLY( signed char *x, int n )                        
-{                                            
+void MULTIPLY( signed char *x, int n )
+{
     int j, k;
     unsigned q, r, u;
     long v;
-    r = 0;                                   
-    for( k = N4; k >= 0; k-- )               
-    {                                        
-        q = n * x[k] + r;                    
-        r = q / 10;                          
-        x[k] = q - r * 10;                   
-    }                                        
+    r = 0;
+    for( k = N4; k >= 0; k-- )
+    {
+        q = n * x[k] + r;
+        r = q / 10;
+        x[k] = q - r * 10;
+    }
 }
 
-void SET( signed char *x, int n )                              
-{                                                
-    memset( x, 0, N4 + 1 );                      
-    x[0] = n;                                    
+void SET( signed char *x, int n )
+{
+    memset( x, 0, N4 + 1 );
+    x[0] = n;
 }
 
 
-void SUBTRACT( signed char *x, signed char *y, signed char *z )                      
-{                                                
+void SUBTRACT( signed char *x, signed char *y, signed char *z )
+{
     int j, k;
     unsigned q, r, u;
     long v;
-    for( k = N4; k >= 1; k-- )                   
-    {                                            
-        if( (x[k] = y[k] - z[k]) < 0 )           
-        {                                        
-            x[k] += 10;                          
-            z[k-1]++;                            
-        }                                        
-    }                                            
-    if( (x[k] = y[k] - z[k]) < 0 )           
-    {                                        
-        x[k] += 10;                          
-    }                                        
+    for( k = N4; k >= 1; k-- )
+    {
+        if( (x[k] = y[k] - z[k]) < 0 )
+        {
+            x[k] += 10;
+            z[k-1]++;
+        }
+    }
+    if( (x[k] = y[k] - z[k]) < 0 )
+    {
+        x[k] += 10;
+    }
 }
 
 
@@ -151,14 +151,6 @@ int main( int argc, char *argv[] )
     init_memo_DIVIDE239();
 
     calculate();
-
-    int i = size_memo_DIVIDE5 -1;
-    while (!memo_used5[i]){
-        fprintf( stderr, "[%d] -> %d\n", i, memo_used5[i]);
-        i--;
-    }
-    fprintf( stderr, "%d\n", i);
-
 
     epilog();
 
@@ -206,17 +198,17 @@ void calculate( void )
 
 /*
 
- N = 10000                      
- A = 0                          
- B = 0                          
- J = 2 * (N + 4) + 1            
- FOR J = J TO 3 STEP -2         
-     A = (1 / J - A) / 5 ^ 2    
-     B = (1 / J - B) / 239 ^ 2  
- NEXT J                         
- A = (1 - A) / 5                
- B = (1 - B) / 239              
- PI = (A * 4 - B) * 4           
+ N = 10000
+ A = 0
+ B = 0
+ J = 2 * (N + 4) + 1
+ FOR J = J TO 3 STEP -2
+     A = (1 / J - A) / 5 ^ 2
+     B = (1 / J - B) / 239 ^ 2
+ NEXT J
+ A = (1 - A) / 5
+ B = (1 - B) / 239
+ PI = (A * 4 - B) * 4
 
 */
 
