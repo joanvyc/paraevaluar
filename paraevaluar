@@ -26,7 +26,7 @@ function error_n_exit {
             rm -rf $dir;
         else
             mv -f $dir/$NAME.out $dir/error.out
-            rm -f $dir/$NAME.time; 
+            rm -f $dir/$NAME.time;
             sed -i "/\\<$NAME\\>/d" $dir/names;
         fi
     fi
@@ -142,20 +142,21 @@ function parse_arguments {
     done
 
     if [ -z ${NAME+x} ]; then NAME=$1; fi;
-    if [ -z ${OUTPUT+x} ]; then OUTPUT=$dir/output; fi    
+    if [ -z ${OUTPUT+x} ]; then OUTPUT=$dir/output; fi;
     PROGRAM=$@;
 }
 
 function calculate_values {
 	FIRST=true;
+  lines=0;
 	while read line;
-	do 
+	do
 		CUR_E=$(echo ${line} | awk '{print $1}');
 		CUR_P=$(echo ${line} | cut -d % -f 1 | awk '{print "(" $1 "*" $2 ") / 100"}' | bc -l);
-		if $FIRST; 
+		if $FIRST;
 		then
 			AVG_E[$2]=$CUR_E;
-			MAX_E[$2]=$CUR_E;	
+			MAX_E[$2]=$CUR_E;
 			MIN_E[$2]=$CUR_E;
 
 			AVG_P[$2]=$CUR_P
@@ -163,21 +164,22 @@ function calculate_values {
 			MIN_P[$2]=$CUR_P
 			FIRST=false;
 		else
-			if (( $(echo "${MAX_E[${2}]} < ${CUR_E}" |bc -l) )); then MAX_E[$2]=$CUR_E; fi	
-			if (( $(echo "${MIN_E[${2}]} > ${CUR_E}" |bc -l) )); then MIN_E[$2]=$CUR_E; fi	
+			if (( $(echo "${MAX_E[${2}]} < ${CUR_E}" |bc -l) )); then MAX_E[$2]=$CUR_E; fi;
+			if (( $(echo "${MIN_E[${2}]} > ${CUR_E}" |bc -l) )); then MIN_E[$2]=$CUR_E; fi;
 			AVG_E[$2]=$(echo "${CUR_E} + ${AVG_E[${2}]}" |bc -l);
 
-			if (( $(echo "${MAX_P[${2}]} < ${CUR_P}" |bc -l) )); then MAX_P[$2]=$CUR_P; fi	
-			if (( $(echo "${MIN_P[${2}]} > ${CUR_P}" |bc -l) )); then MIN_P[$2]=$CUR_P; fi	
+			if (( $(echo "${MAX_P[${2}]} < ${CUR_P}" |bc -l) )); then MAX_P[$2]=$CUR_P; fi;
+			if (( $(echo "${MIN_P[${2}]} > ${CUR_P}" |bc -l) )); then MIN_P[$2]=$CUR_P; fi;
 			AVG_P[$2]=$(echo "${CUR_P} + ${AVG_P[${2}]}" |bc -l);
 		fi
+    lines=$((lines + 1));
 	done < $1;
 
-	AVG_E[$2]=$(echo "${AVG_E[${2}]} / ${N}" | bc -l | awk '{printf("%.4f\n", $1)}');
+	AVG_E[$2]=$(echo "${AVG_E[${2}]} / ${lines}" | bc -l | awk '{printf("%.4f\n", $1)}');
     CLEANUP=false;
     if (( $(echo "${AVG_E} <= 0" |bc -l) )); then error_n_exit "That was too quick." 5; fi
 
-	AVG_P[$2]=$(echo "${AVG_P[${2}]} / ${N}" | bc -l | awk '{printf("%.4f\n", $1)}');
+	AVG_P[$2]=$(echo "${AVG_P[${2}]} / ${lines}" | bc -l | awk '{printf("%.4f\n", $1)}');
     CLEANUP=false;
     if (( $(echo "${AVG_P} <= 0" |bc -l) )); then error_n_exit "That was too quick." 5; fi
 }
@@ -199,7 +201,7 @@ function create_table {
         if [[ $nu -eq 0 ]];
         then
             calculate_values $dir/$name.time $nu;
-            (   
+            (
             echo -e -n "$name\t";
             echo -e -n "${MAX_E[${nu}]}\t";
             echo -e -n "${MIN_E[${nu}]}\t";
@@ -253,6 +255,11 @@ then
     display_table;
     exit 0;
 fi;
+
+if ! which $(echo $PROGRAM | cut -d ' ' -f 1) 2>&1 > /dev/null;
+then
+    error_n_exit "$PROGRAM does not exists." 6;
+fi
 
 # Create dir
 if [ -d $dir ];
@@ -319,7 +326,7 @@ else
     if [[ "$(cat $dir/golden.out | sha256sum )" == "$(cat $dir/$NAME.out | sha256sum )" ]];
     then
         echo -e "${GREEN}==> Output match.${NC}";
-    else    
+    else
         if $IGNORE_GOLDEN;
         then
             show_warning "Output of $NAME does not match golden output.";
@@ -327,7 +334,7 @@ else
             show_error "Output of $NAME does not match golden output.";
             CLEANUP=true;
             error_n_exit "Aborting due to output missmatch" 3;
-        fi  
+        fi
     fi
 fi
 
