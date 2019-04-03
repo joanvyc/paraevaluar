@@ -52,12 +52,14 @@ function usage {
     echo -e "\t\t-original\t\t\tforces the program to be treated as the original";
     echo -e "\t\t-t|--time-path PATH\t\tto specify the path of time (default /usr/bin/time)";
     echo -e "\t\t-v|--verbose\t\t\tverbose";
-    echo -e "\t\t-report [REPORT OPTIONS]\tdisplays the report of the evaluations";
+    echo -e "\t\t-report [REPORT OPTIONS]\tdisplays the report of the evaluations (default REPORT OPTIONS: TABLE)";
     echo -e "\t\t-o|--output FILE\t\tappends the result of the evaluation to the FILE";
     echo -e "\t\t--clean\t\t\t\tdeletes all evaldir in the current directory";
     echo -e "\t\t-h|--help\t\t\tprint this usage";
     echo -e "\tREPORT OPTIONS:";
-    echo -e "\t\tNot implemented yet.";
+    echo -e "\t\tTABLE\tdisplays a table";
+    echo -e "\t\tPLOT\tdisplays a speedup plot";
+
 }
 
 function parse_report_options {
