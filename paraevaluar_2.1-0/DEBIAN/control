@@ -1,8 +1,9 @@
 Package: paraevaluar
-Version: 1.0-2
+Version: 2.1-0
 Section: base
+Architecture: all
 Priority: optional
-Depends: coreutils, awk, time, groff-base, bc
+Depends: coreutils, sed, awk, time, groff-base, bc, gnuplot
 Maintainer: Joan Vinyals - joanvyc@ieee.org
 Description: paraevaluar
  Is a tool aimed to automatize the performance analisys procedures.
