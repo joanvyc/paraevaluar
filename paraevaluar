@@ -59,15 +59,32 @@ function usage {
     echo -e "\tREPORT OPTIONS:";
     echo -e "\t\tNot implemented yet.";
 }
-function parse_report_options{
+
+function parse_report_options {
     if [[ $# -eq 0 ]];
     then
-        TABLE=TRUE
+        TABLE=true
+        PLOT=false
         #rest report option false
     else
-        while [[ $# -gt 0 ]] && [[ "$(echo $1 | cut -c-1)" == "-" ]];
+        while [[ $# -gt 0 ]];
         do
-
+            key="$1"
+            case $key in
+                PLOT)
+                    PLOT=true
+                    shift;
+                    ;;
+                TABLE)
+                    TABLE=true
+                    shift;
+                    ;;
+                *)
+                    show_error "Unknown option: $1";
+                    >&2 usage;
+                    exit 1;
+                    ;;
+            esac
         done
     fi
 }
@@ -122,8 +139,9 @@ function parse_arguments {
                 ;;
             --report)
                 REPORT=true;
-                TABLE=true;
                 shift; # past argument
+                parse_report_options $@;
+                while [[ $# -gt 0 ]]; do shift; done;
                 ;;
             -o|--output)
                 OUTPUT=$2;
@@ -222,6 +240,33 @@ function create_table_entry {
             ) >> $dir/tablefile;
 }
 
+function create_plot_entry {
+    (
+    echo -e -n "$((nu + 1))\t";
+    echo       "${AVG_E[0]} / ${AVG_E[${1}]}" | bc -l | awk '{printf("%.4f\t", $1)}';
+    echo       "${AVG_E[$(expr $1 - 1)]} / ${AVG_E[${1}]}" | bc -l | awk '{printf("%.4f\n", $1)}';
+    ) >> $dir/plotfile;
+
+    (
+    echo -e -n "\"$2\" $((nu + 1)), ";
+    ) >> $dir/plotscript
+}
+
+function close_table {
+    echo ".TE" >> $dir/tablefile;
+}
+
+function close_plot {
+    (
+    echo -e -n ")\n";
+    echo "plot '$dir/plotfile' using 2 title 'speedup respect original' with lines, \\";
+    echo -e "\t'$dir/plotfile' using 3 title 'speedup respect previous' with lines"
+    echo "set yr [0:GPVAL_DATA_Y_MAX+1]"
+    echo "replot"
+    echo "pause -1";
+    ) >> $dir/plotscript;
+}
+
 function create_report {
     $TABLE && create_table_header;
     nu=0;
@@ -241,20 +286,36 @@ function create_report {
             echo -e -n "${AVG_P[${nu}]}\t";
             echo -e    "-\t";
             ) >> $dir/tablefile;
+
+            $PLOT && (
+            echo -e -n "set xtics (\"$name\" 1,";
+            ) > $dir/plotscript;
+
+            $PLOT && (
+            echo -e -n "1\t1\t1\n";
+            ) > $dir/plotfile;
+
         else
             calculate_values $dir/$name.time $nu;
             $TABLE && create_table_entry $nu;
+            $PLOT && create_plot_entry $nu $name;
         fi
         nu=$((nu + 1));
     done < $dir/names;
 
-    echo ".TE" >> $dir/tablefile
+    $PLOT && close_plot
+
+    $TABLE && close_table
 }
 
 function display_table {
-    tbl $dir/tablefile | groff -T ascii 2>/dev/null | awk '{ if (0!=length($0)) print $0}' | tee --append $OUTPUT;
+    tbl $dir/tablefile | groff -T ascii 2>/dev/null | awk '{ if (0!=length($0)) print $0}' | tee $OUTPUT;
     echo -e "\n";
     echo -e "\n" >> $OUTPUT;
+}
+
+function display_plot {
+    gnuplot $dir/plotscript;
 }
 
 # Seting trap for interrupt handling.
@@ -272,6 +333,7 @@ if $REPORT;
 then
     create_report;
     $TABLE && display_table;
+    $PLOT && display_plot;
     exit 0;
 fi;
 

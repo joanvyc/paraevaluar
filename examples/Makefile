@@ -15,5 +15,6 @@ pi.Ofast: pi.c
 
 clean:
 	rm -rf $(BINS)
+	../paraevaluar --clean-all
 
 
