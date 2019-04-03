@@ -244,13 +244,13 @@ function create_table_entry {
 
 function create_plot_entry {
     (
-    echo -e -n "$((nu + 1))\t";
+    echo -e -n "$((2*nu))\t";
     echo       "${AVG_E[0]} / ${AVG_E[${1}]}" | bc -l | awk '{printf("%.4f\t", $1)}';
     echo       "${AVG_E[$(expr $1 - 1)]} / ${AVG_E[${1}]}" | bc -l | awk '{printf("%.4f\n", $1)}';
     ) >> $dir/plotfile;
 
     (
-    echo -e -n "\"$2\" $((nu + 1)), ";
+    echo -e -n "\"$2\" $((2*nu)), ";
     ) >> $dir/plotscript
 }
 
@@ -261,9 +261,13 @@ function close_table {
 function close_plot {
     (
     echo -e -n ")\n";
-    echo "plot '$dir/plotfile' using 2 title 'speedup respect original' with lines, \\";
-    echo -e "\t'$dir/plotfile' using 3 title 'speedup respect previous' with lines"
+    echo "set style line 5 lt 1 lc rgb 'green' lw 3 pt 6"
+    echo "set style line 4 lt 0 lc rgb 'purple' lw 3 pt 6"
+    echo "set grid"
+    echo "plot '$dir/plotfile' using 1:2 title 'speedup respect original' with lines ls 5, \\";
+    echo -e "\t'$dir/plotfile' using 1:3 title 'speedup respect previous' with lines ls 4"
     echo "set yr [0:GPVAL_DATA_Y_MAX+1]"
+    echo "set xr [0:GPVAL_DATA_X_MAX]"
     echo "replot"
     echo "pause -1";
     ) >> $dir/plotscript;
@@ -290,11 +294,11 @@ function create_report {
             ) >> $dir/tablefile;
 
             $PLOT && (
-            echo -e -n "set xtics (\"$name\" 1,";
+            echo -e -n "set xtics (\"$name\" 0,";
             ) > $dir/plotscript;
 
             $PLOT && (
-            echo -e -n "1\t1\t1\n";
+            echo -e -n "0\t1\t1\n";
             ) > $dir/plotfile;
 
         else
