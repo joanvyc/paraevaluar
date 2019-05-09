@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 function declare_colors {
     RED='\033[1;31m'
@@ -222,9 +222,9 @@ function create_table_header {
     echo ".pl 50";
     echo ".TS H" ;
     echo "allbox, center;";
-    echo "l l l l l l l l l.";
+    echo "l l l l l l.";
     echo ".";
-    echo -e "Program\tMaxE (s)\tMinE (s)\tAvgE (s)\tSpeedUpE\tMaxCPU (s)\tMinCPU (s)\tAvgCPU (s)\tSpeedUpCPU"
+    echo -e "Program\tMax Time (s)\tMin Time (s)\tAvg Time (s)\tSpeedup\tSlowdown"
     echo ".TH";
     ) > $dir/tablefile;
 }
@@ -234,12 +234,14 @@ function create_table_entry {
             echo -e -n "${MAX_E[${1}]}\t";
             echo -e -n "${MIN_E[${1}]}\t";
             echo -e -n "${AVG_E[${1}]}\t";
-            echo       "${AVG_E[0]} / ${AVG_E[${1}]}" | bc -l | awk '{printf("%.4f\t", $1)}';
-            echo -e -n "${MAX_P[${1}]}" | awk '{printf("%.4f\t", $1)}';
-            echo -e -n "${MIN_P[${1}]}" | awk '{printf("%.4f\t", $1)}';
-            echo -e -n "${AVG_P[${1}]}\t";
-            echo       "${AVG_P[0]} / ${AVG_P[${1}]}" | bc -l | awk '{printf("%.4f\n", $1)}';
             ) >> $dir/tablefile;
+            speedup=`echo "${AVG_E[0]} / ${AVG_E[${1}]}" | bc -l | awk '{printf("%.4f", $1)}'`;
+            if [ $(echo "$speedup < 1" | bc -l) -eq 1 ];
+            then
+                echo -e "-\t${speedup}" >> $dir/tablefile;
+            else
+                echo -e "${speedup}\t-" >> $dir/tablefile;
+            fi
 }
 
 function create_plot_entry {
@@ -287,9 +289,6 @@ function create_report {
             echo -e -n "${MIN_E[${nu}]}\t";
             echo -e -n "${AVG_E[${nu}]}\t";
             echo -e -n "-\t";
-            echo -e -n "${MAX_P[${nu}]}" | awk '{printf("%.2f\t", $1)}';
-            echo -e -n "${MIN_P[${nu}]}" | awk '{printf("%.2f\t", $1)}';
-            echo -e -n "${AVG_P[${nu}]}\t";
             echo -e    "-\t";
             ) >> $dir/tablefile;
 
