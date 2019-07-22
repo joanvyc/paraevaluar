@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 function declare_colors {
     RED='\033[1;31m'
