@@ -1,0 +1,234 @@
+#!/bin/bash
+
+source paraevaluar.utils 
+
+unknown=false;
+PROJECT="paraevaluar-default"
+
+EXIT_CASE=6
+
+line=0;
+
+source ${PARAEVALUAR_UTILS}
+
+function menu {
+# clear the screen
+    tput clear
+
+    line=3
+# Move cursor to screen location X,Y (top left is 0,0)
+    tput cup $line 15
+
+# Set a foreground colour using ANSI escape
+    line=$((line+1))
+    tput setaf 3
+    echo "Paraevaluar." tput sgr0
+
+    line=$((line+1))
+    tput cup $line 15
+    echo "Current project: $PROJECT"
+
+    line=$((line+2))
+    tput cup $line 17
+# Set reverse video mode
+    tput rev
+    echo "M A I N - M E N U"
+    tput sgr0
+    
+    line=$((line+1))
+    tput cup $line 15
+    echo "1. Edit modules"
+
+    line=$((line+1))
+    tput cup $line 15
+    echo "2. Edit prologe"
+
+    line=$((line+1))
+    tput cup $line 15
+    echo "3. Edit command line"
+
+    line=$((line+1))
+    tput cup $line 15
+    echo "4. Edit epilog"
+
+    line=$((line+1))
+    tput cup $line 15
+    echo "5. View script"
+
+    line=$((line+1))
+    tput cup $line 15
+    echo "${EXIT_CASE}. Quit"
+
+    line=$((line+1))
+    if eval $unknown; then
+        tput cup $line 15
+        tput setaf 3
+        echo "Unknown parameter."
+        tput sgr0
+    fi
+# Set bold mode
+    line=$((line+1))
+    tput bold
+    tput cup $line 15
+    read -p "Enter your choice [1-${EXIT_CASE}] " choice
+}
+
+function create_project {
+    line=$((line+3))
+    tput cup $line 15
+    tput bold
+    read -p "Enter the project name: " PROJECT
+    if  [[ -f $PROJECT ]]; then echo "The project already exists: $PROJECT"; else mkdir -p $PROJECT/.paraevaluar; fi
+
+
+    line=$((line+1))
+    tput cup $line 15
+    tput bold
+    read -p "Enter the xml file: " PARAEVALUAR_XML
+    if ![[ -f $PARAEVALUAR_XML ]]; then echo "File does not exists: $PARAEVALUAR_XML"; else cp $PARAEVALUAR_XML $PROJECT/.paraevaluar; fi
+    
+
+    tput clear
+    tput sgr0
+    tput rc
+}
+
+
+function list_project {
+    tput sgr0
+    tput cup $line 15
+    echo "${2}. ${1}"
+}
+
+function select_project {
+    
+    line=$((line+3))
+
+    local count=0;
+
+    declare -a PROJECTS
+
+    for i in *;
+    do
+        if [[ -d $i ]];
+        then
+            if [[ -d "$i/.paraevaluar" ]];
+            then
+                count=$((count+1));
+                line=$((line+1))
+                PROJECTS+=("$i")
+                list_project "$i" $count;
+            fi
+        fi
+    done
+
+
+    line=$((line+2))
+    tput cup $line 15
+    tput bold
+    read -p "Select a project [1-$count]: " PROJECT_POS
+    PROJECT=$PROJECTS[$((PROJECT_POS-1))];
+
+    tput clear
+    tput sgr0
+    tput rc
+}
+
+
+function evaluate_binary {
+
+echo "";
+}
+
+function analyze_results {
+
+echo "";
+}
+
+function exit_paraevaluar {
+	tput clear;
+	tput sgr0;
+	tput rc;
+	#
+	# Move cursor to screen location X,Y (top left is 0,0);
+	tput cup 3 15;
+	#
+	# Set a foreground colour using ANSI escape;
+	tput setaf 3;
+	echo "Paraevaluar.";
+	tput sgr0;
+	tput cup 5 17;
+	#
+	# Set reverse video mode;
+	tput rev;
+	echo "Bye Bye!";
+	tput sgr0;
+}
+
+function edit_modules {
+	vim .paraevaluar/modules
+}
+
+function edit_prologue {
+	vim .paraevaluar/PROLOGUE
+}
+
+function edit_command {
+	vim .paraevaluar/command
+}
+
+function edit_epilog {
+	vim .paraevaluar/EPILOG
+}
+
+# 1. Edit modules
+# 2. Edit prologe
+# 3. Edit command line
+# 4. Edit epilog
+# 5. Quit
+function apply {
+	case $1 in
+		1)
+			edit_modules;
+			;;
+		2)
+			edit_prologue;
+			;;
+		3)
+			edit_command;
+			;;
+		4)
+			edit_epilog;
+			;;
+		5)
+			(
+			cat .paraevaluar/base
+			cat .paraevaluar/modules
+			cat .paraevaluar/PROLOGUE
+			cat .paraevaluar/command
+			cat .paraevaluar/EPILOG
+			) | view -
+			;;
+		${EXIT_CASE})
+			exit_paraevaluar;
+			;;
+		*)
+			tput clear
+			tput sgr0
+			tput rc
+			unknown=true;
+			;;
+	esac
+}
+
+if ![[ -d .paraevaluar ]];
+then
+	error "Not a paraevaluar project"
+fi
+
+choise=0
+while [[ $choice -ne $EXIT_CASE ]];
+do
+	menu;
+	apply $choice;
+done

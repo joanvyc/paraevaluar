@@ -1,0 +1,87 @@
+#!/bin/bash
+
+source paraevaluar.utils 
+
+function create_omp {
+	if eval $OMP_ENABLED;
+	then
+		for base in ${INTERMEDIATE_DIR}/*;
+		do
+			for i in ${OMP_RANGE};
+			do
+				cp -r ${base} ${base}-${i}omp;
+				sed -i "s|\(#SBATCH --cpus-per-task\)|\\1 ${i}|g" ${base}-${i}omp;
+			done				
+			\rm -f ${base};
+		done
+	else
+		for base in .paraevaluar/${INPUT}-*mpi;
+		do
+			sed -i 's|(#SBATCH --cpus-per-task)|\1 1|g' ${base};
+		done
+	fi
+}
+
+function create_mpi {
+	if eval $MPI_ENABLED
+	then
+		for base in ${INTERMEDIATE_DIR}/*;
+		do
+			for i in ${MPI_RANGE};
+			do
+				cp -r ${base} ${base}-${i}mpi;
+				sed -i "s|\(#SBATCH --ntasks\)|\\1 ${i}|g" ${base}-${i}mpi;
+			done				
+			\rm -f ${base};
+		done
+	else
+		for base in ${INTERMEDIATE_DIR}/*;
+		do
+			sed -i 's|(#SBATCH --ntasks)|\1 1|g' ${base};
+		done
+	fi
+}
+
+function create_input {
+	if eval $INPUT_ENABLED;
+	then
+		INPUT=`get_input`;
+		mv ${INTERMEDIATE_DIR}/base ${INTERMEDIATE_DIR}/${INPUT};
+	else
+		INPUT="base";
+	fi
+}
+
+function set_enviroment {
+	INTERMEDIATE_DIR=".paraevaluar/intermediate-job-scripts";
+	JOBS_DIR=".paraevaluar/job-scripts"
+
+	#cp .paraevaluar/base ${INTERMEDIATE_DIR};
+
+	parse_xml;
+}
+
+function complete_and_run {
+	for i in ${JOBS_DIR}/*;
+	do
+		mkdir -p `basename $i`;
+		cp ${i} jobscript.sh;
+		sbatch jobscript.sh;
+	done
+}
+
+function print_enviroment {
+    printenv OMP_ENABLED OMP_RANGE MPI_ENABLED MPI_RANGE INPUT_ENABLED INPUT
+}
+
+# Needed variables are:
+#    OMP_ENABLED, OMP_RANGE
+#    MPI_ENABLED, MPI_RANGE
+#    INPUT_ENABLED, INPUT
+set_enviroment;
+print_enviroment;
+exit 0;
+create_input;
+create_mpi;
+create_omp;
+complete_and_run;

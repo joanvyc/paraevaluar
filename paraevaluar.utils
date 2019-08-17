@@ -1,0 +1,40 @@
+#!/bin/bash
+
+function usage {
+cat >&2 <<EOF
+Usage:	paraevaluar COMMAND
+		COMMAND
+			init
+			mkscript
+EOF
+}
+
+function error {
+	>&2 echo -e "ERROR: $1";
+	exit 1;
+}
+
+function parse_xml {
+	export INPUT_ENABLED=`xmlstarlet sel -t -m "/evaluate/input" -v "@enabled" -n paraevaluar.xml`
+	if [[ $INPUT_ENABLED == "yes" ]]; then export INPUT_ENABLED=true; else export INPUT_ENABLED=false; fi
+	if eval $INPUT_ENABLED;
+	then
+		export INPUT=`xmlstarlet sel -N enabled=no -t -v /evaluate/input -n paraevaluar.xml | awk 'gsub(" ", ""); length($0)!=0 {print $0}'
+`
+	fi
+
+	export MPI_ENABLED=`xmlstarlet sel -t -m "/evaluate/mpi" -v "@enabled" -n paraevaluar.xml`
+	if [[ $MPI_ENABLED == "yes" ]]; then export MPI_ENABLED=true; else export MPI_ENABLED=false; fi
+	if eval $MPI_ENABLED;
+	then
+		export MPI_RANGE=`xmlstarlet sel -t -v /evaluate/mpi/range -n paraevaluar.xml | awk 'gsub(" ", ""); gsub(",", " "); length($0)!=0 {print $0};'`
+		
+	fi
+
+	export OMP_ENABLED=`xmlstarlet sel -t -m "/evaluate/omp" -v "@enabled" -n paraevaluar.xml`
+	if [[ $OMP_ENABLED == "yes" ]]; then export OMP_ENABLED=true; else export OMP_ENABLED=false; fi
+	if eval $OMP_ENABLED;
+	then
+		export OMP_RANGE=`xmlstarlet sel -t -v /evaluate/omp/range -n paraevaluar.xml | awk 'gsub(" ", ""); gsub(",", " "); length($0)!=0 {print $0}; '`
+	fi
+}

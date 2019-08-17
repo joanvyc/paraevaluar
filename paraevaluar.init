@@ -1,0 +1,23 @@
+#!/bin/bash
+
+source paraevaluar.utils
+
+mkdir -p .paraevaluar/job-scripts
+mkdir -p .paraevaluar/intermediate-job-scripts
+
+cat > .paraevaluar/base << EOF
+#!/bin/bash
+
+#SBATCH --job-name
+#SBATCH --time 
+
+#SBATCH --nodes
+#SBATCH --ntasks
+#SBATCH --cores-per-socket
+
+EOF
+
+touch .paraevaluar/modules
+touch .paraevaluar/PROLOGUE
+touch .paraevaluar/EPILOG
+touch .paraevaluar/command

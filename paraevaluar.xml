@@ -1,0 +1,46 @@
+<?xml version='1.0'?>
+
+<evaluate enabled="yes" home="" >
+            
+        <project>
+                Example
+        </project>
+
+        <input enabled="yes" type="file">
+                ./H2O-64.inp
+        </input>
+
+        <mpi enabled="yes">
+                <range>
+			2.4,8,16,32
+                </range>
+                <tasks-per-node></tasks-per-node> 
+        </mpi>
+
+        <openmp enabled="no">
+                <range>
+
+                </range>
+        </openmp>
+
+        <extrae enabled="no">
+                ./extrae.xml
+        </extrae>
+
+        <bsc_tools enabled="no">
+                <dimemas enabled="no"> </dimemas>
+                <clustering enabled="no"></clustering>
+                <tracking enabled="no"></tracking>
+                <folding enabled="no"></folding>
+                <modelfactors enable="no"></modelfactors>
+        </bsc_tools>
+
+        <job enabled="no">
+                <slurm enabled="yes"/>
+                <modules enabled="yes">
+                        gcc/8.2.0 openmpi/3.1.2
+                </modules>
+                <script>job-script/default</script>
+        </job>
+
+</evaluate>
