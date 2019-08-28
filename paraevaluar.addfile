@@ -1,0 +1,11 @@
+#!/bin/bash
+
+source paraevaluar.utils
+
+if ! [[ -f $1 ]];
+then
+	echo "ERROR: file not found: $1";
+	exit 1;
+else
+	cp -rf $1 -t ${PROJECT_NAME}/files/;
+fi

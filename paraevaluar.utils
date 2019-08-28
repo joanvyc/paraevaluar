@@ -1,40 +1,110 @@
 #!/bin/bash
 
-function usage {
-cat >&2 <<EOF
-Usage:	paraevaluar COMMAND
-		COMMAND
-			init
-			mkscript
-EOF
-}
-
-function error {
-	>&2 echo -e "ERROR: $1";
+if [[ -x paraevaluar.xml ]];
+then
+	echo "ERROR: could not find file: paraevaluar.xml";
 	exit 1;
-}
+fi
 
-function parse_xml {
-	export INPUT_ENABLED=`xmlstarlet sel -t -m "/evaluate/input" -v "@enabled" -n paraevaluar.xml`
-	if [[ $INPUT_ENABLED == "yes" ]]; then export INPUT_ENABLED=true; else export INPUT_ENABLED=false; fi
-	if eval $INPUT_ENABLED;
-	then
-		export INPUT=`xmlstarlet sel -N enabled=no -t -v /evaluate/input -n paraevaluar.xml | awk 'gsub(" ", ""); length($0)!=0 {print $0}'
-`
-	fi
 
-	export MPI_ENABLED=`xmlstarlet sel -t -m "/evaluate/mpi" -v "@enabled" -n paraevaluar.xml`
-	if [[ $MPI_ENABLED == "yes" ]]; then export MPI_ENABLED=true; else export MPI_ENABLED=false; fi
-	if eval $MPI_ENABLED;
-	then
-		export MPI_RANGE=`xmlstarlet sel -t -v /evaluate/mpi/range -n paraevaluar.xml | awk 'gsub(" ", ""); gsub(",", " "); length($0)!=0 {print $0};'`
-		
-	fi
+export PROJECT_NAME=`xmlstarlet sel -t -v "/evaluate/project" paraevaluar.xml | awk 'length($0)!=0 {gsub(" ", ""); gsub("\t", "");print $0;}'`
 
-	export OMP_ENABLED=`xmlstarlet sel -t -m "/evaluate/omp" -v "@enabled" -n paraevaluar.xml`
-	if [[ $OMP_ENABLED == "yes" ]]; then export OMP_ENABLED=true; else export OMP_ENABLED=false; fi
-	if eval $OMP_ENABLED;
-	then
-		export OMP_RANGE=`xmlstarlet sel -t -v /evaluate/omp/range -n paraevaluar.xml | awk 'gsub(" ", ""); gsub(",", " "); length($0)!=0 {print $0}; '`
-	fi
+export INPUT_ENABLED=`xmlstarlet sel -t -m "/evaluate/input" -v "@enabled" -n paraevaluar.xml`
+if [[ $INPUT_ENABLED == "yes" ]]; then export INPUT_ENABLED=true; else export INPUT_ENABLED=false; fi
+if eval $INPUT_ENABLED;
+then
+	export INPUT=`xmlstarlet sel -t -v /evaluate/input paraevaluar.xml | awk 'length($0)!=0 {gsub(" ", ""); gsub("\t", ""); gsub(",", " ") ;print $0;}'`
+fi
+
+export MPI_ENABLED=`xmlstarlet sel -t -m "/evaluate/mpi" -v "@enabled" -n paraevaluar.xml`
+if [[ $MPI_ENABLED == "yes" ]]; then export MPI_ENABLED=true; else export MPI_ENABLED=false; fi
+if eval $MPI_ENABLED;
+then
+	export MPI_RANKS_array=`xmlstarlet sel -t -v /evaluate/mpi/ranks paraevaluar.xml | awk 'length($0)!=0 {gsub(" ", ""); gsub("\t", ""); gsub(",", " "); print $0;}'`
+	for MPI_RANKS in $MPI_RANKS_array;
+	do
+		if [[ "$MPI_RANKS" =~ [0-9]+-[0-9]+ ]];
+		then
+			FUNCTION=`xmlstarlet sel -t -m /evaluate/mpi/ranks -v @function paraevaluar.xml`
+			init=`echo "$MPI_RANKS" | cut -d- -f 1`
+			fini=`echo "$MPI_RANKS" | cut -d- -f 2`
+
+			while [[ $init -lt $fini ]]; do MPI_RANKS_unrolled="$MPI_RANKS_unrolled $init"; init=`echo $init $FUNCTION | bc`; done
+			export MPI_RANKS_array=`echo $MPI_RANKS_array | sed "s/$MPI_RANKS/$MPI_RANKS_unrolled $fini/g"`
+		fi
+	done
+fi
+
+export OMP_ENABLED=`xmlstarlet sel -t -m "/evaluate/omp" -v "@enabled" -n paraevaluar.xml`
+if [[ $OMP_ENABLED == "yes" ]]; then export OMP_ENABLED=true; else export OMP_ENABLED=false; fi
+if eval $OMP_ENABLED;
+then
+	export OMP_THREADS_array=`xmlstarlet sel -t -v /evaluate/omp/threads paraevaluar.xml | awk 'length($0)!=0 {gsub(" ", ""); gsub("\t", ""); gsub(",", " ") ;print $0;}'`
+	for OMP_THREADS in $OMP_THREADS_array;
+	do
+		if [[ "$OMP_THREADS" =~ [0-9]+-[0-9]+ ]];
+		then
+			FUNCTION=`xmlstarlet sel -t -m /evaluate/mpi/threads -v @function paraevaluar.xml`
+			init=`echo "$OMP_THREADS" | cut -d- -f 1`
+			fini=`echo "$OMP_THREADS" | cut -d- -f 2`
+
+			while [[ $init -lt $fini ]]; do OMP_THREADS_unrolled="$OMP_THREADS_unrolled $init"; init=`echo $init $FUNCTION | bc`; done 
+			OMP_THREADS_array=`echo $OMP_THREADS_array | sed "s/$OMP_THREADS/$OMP_THREADS_unrolled $fini/g"`
+		fi
+	done
+fi
+
+JOBS_DIR="${PROJECT_NAME}/job-scripts"
+
+function assert_user {
+	DEFAULT_CHOISE=0;
+	while [[ $# -gt 0 ]];
+	do
+		case $1 in
+			--text)
+				SENTANCE=$2;
+				shift;
+				shift;
+				;;
+			--default-no)
+				DEFAULT_CHOISE=1;
+				shift;
+				;;
+			--default-yes)
+				DEFAULT_CHOISE=0;
+				shift;
+				;;
+			*)
+				continue;
+				;;
+		esac
+	done
+
+	echo -n $SENTANCE;
+
+	shopt -s nocasematch;
+	unset user_choise;
+	while [[ -z ${user_choise+x} ]];
+	do
+		read user_choise;
+		case $user_choise in
+			y|yes)
+				shopt -u nocasematch;
+				return 0;
+				;;
+			n|no)
+				shopt -u nocasematch;
+				return 1;
+				;;
+			"")
+				shopt -u nocasematch;
+				return $DEFAULT_CHOISE;
+				;;
+			*)
+				echo "Unknown answer!";
+				echo -n $SENTANCE;
+				;;
+		esac
+	done
+	shopt -u nocasematch;
 }

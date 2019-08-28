@@ -7,11 +7,11 @@
         </project>
 
 	<command-format>
-		mpirun -np ${SLURM_NRASKS} ##binary## -i ##input## -o ##output##
+		##binary## ##input## &gt; ##output##
 	</command-format>
 
 	<binary path=".">
-		pi.3
+		pi.O3
 	</binary>
 
         <input enabled="yes">
@@ -42,8 +42,8 @@
                 </threads>
         </openmp>
 
-	<timing enabled="no">
-		<time enabled="no"></time>
+	<timing enabled="yes">
+		<time enabled="yes"></time>
 	</timing>
 
 	<profiling enabled="no">

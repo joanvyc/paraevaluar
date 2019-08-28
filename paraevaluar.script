@@ -1,0 +1,105 @@
+#!/bin/bash
+
+source paraevaluar.utils 
+
+if ! [[ -d ${PROJECT_NAME} ]];
+then
+	>&2 echo "The project ${PROJECT_NAME} does not exists"
+	>&2 echo "For more information run: paraevaluar help"
+fi
+
+BASE_SCRIPT=${PROJECT_NAME}/base
+
+if ! [[ -f ${BASE_SCRIPT} ]];
+then
+
+echo -e "#!/bin/bash\n" > ${BASE_SCRIPT}
+
+export JOB_SCRIPT_ENABLED=$(
+		xmlstarlet sel -t -m "/evaluate/job" \
+			--if   '@enabled="yes"' -o "true"  -n \
+			--elif '@enabled="no"'  -o "false" -n \
+		paraevaluar.xml
+		)
+
+if eval $JOB_SCRIPT_ENABLED;
+then
+cat >> ${BASE_SCRIPT} << EOF
+#SBATCH -J ${PROJECT_NAME}
+#SBATCH -t 1:00:00
+
+EOF
+fi
+
+echo "# Enviroment" >> ${BASE_SCRIPT}
+xmlstarlet sel -t -m '/evaluate/enviroment/var' \
+	-i '@append=""' \
+		-v "concat(@name,'=',self::var)" -n \
+	--else \
+		-v "concat(@name,'=$',@name,@append,self::var)" -n \
+paraevaluar.xml >> ${BASE_SCRIPT};
+
+export BINARY_PATH=`xmlstarlet sel -t -m "/evaluate/binary" -v "@path" -n paraevaluar.xml`
+echo "PATH=\$PATH:$BINARY_PATH" >> ${BASE_SCRIPT}
+
+echo "" >> ${BASE_SCRIPT};
+
+
+export MODULES_ENABLED=$(
+	xmlstarlet sel -t -m "/evaluate/enviroment/modules" \
+		--if   '@enabled="yes"' -o "true"  -n \
+		--elif '@enabled="no"'  -o "false" -n \
+	paraevaluar.xml
+)
+
+if eval $MODULES_ENABLED;
+then
+	echo "# Modules" >> ${BASE_SCRIPT};
+	xmlstarlet sel -t -m '/evaluate/enviroment/modules' -m module -v "concat('module load ', self::module)"  -n paraevaluar.xml >> ${BASE_SCRIPT}
+#	MODULES=$(  | awk 'length($0)!=0 {gsub(" ", ""); gsub("\t", ""); gsub(",", " ");  print $0;}' )
+#	MODULES=$( echo ${MODULES} | awk '{ for (i=NF; i>1; i--) printf("%s ",$i); print $1; }' )
+#	for module in ${MODULES};
+#	do
+#		echo "module load ${module}"  >> ${BASE_SCRIPT};
+#	done
+	echo "" >> ${BASE_SCRIPT};
+fi
+
+
+BASENAME=$(basename $INPUT | rev | cut -d'.' -f2- | rev)
+OUTPUT=${BASENAME}.out
+
+export BINARY=`xmlstarlet sel -t -v /evaluate/binary paraevaluar.xml | awk 'length($0)!=0 {gsub(" ", ""); gsub("\t", ""); gsub(",", " ") ;print $0;}'`
+
+cat << EOF
+replacing spaces
+replacing ##binary## for $BINARY
+replacing ##input##  for $INPUT
+replacing ##output## for $OUTPUT
+EOF
+
+cat > "${PROJECT_NAME}/command.sed" << EOF
+s:^\( \|\t\)*::g;
+
+s|##binary##|${BINARY}|g;
+
+s|##input##|${INPUT}|g;
+s|##output##|${OUTPUT}|g;
+
+s|&gt;|>|g;
+
+EOF
+
+if TIMING ENABLED;
+then
+cat >> "${PROJECT_NAME}/command.sed" << EOF
+s|^|/usr/bin/time --format=%e --output=${BASENAME}.timing |g;
+
+EOF
+
+xmlstarlet sel -t -m '/evaluate' -v command-format  -n paraevaluar.xml | sed -f "${PROJECT_NAME}/command.sed" >> ${BASE_SCRIPT}
+echo "" >> ${BASE_SCRIPT}
+
+fi
+
+vim -S ${PROJECT_NAME}/.vimrc ${BASE_SCRIPT};

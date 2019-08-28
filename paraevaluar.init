@@ -2,22 +2,22 @@
 
 source paraevaluar.utils
 
-mkdir -p .paraevaluar/job-scripts
-mkdir -p .paraevaluar/intermediate-job-scripts
+if [[ -d ${PROJECT_NAME} ]];
+then
+	if ! assert_user --default-no --text "WARNING: Project already exists. Do you want to override it? [y/N]  ";
+	then
+		echo "Aborting...";
+		exit 0;	
+	fi
+fi
 
-cat > .paraevaluar/base << EOF
-#!/bin/bash
+echo "Creating new paraevaluar project: ${PROJECT_NAME}";
 
-#SBATCH --job-name
-#SBATCH --time 
+\rm -rf   ${PROJECT_NAME} 
+\mkdir -p ${PROJECT_NAME}
+\mkdir -p ${PROJECT_NAME}/job-scripts
+\mkdir -p ${PROJECT_NAME}/files
 
-#SBATCH --nodes
-#SBATCH --ntasks
-#SBATCH --cores-per-socket
+\cat > ${PROJECT_NAME}/.vimrc << EOF
 
 EOF
-
-touch .paraevaluar/modules
-touch .paraevaluar/PROLOGUE
-touch .paraevaluar/EPILOG
-touch .paraevaluar/command

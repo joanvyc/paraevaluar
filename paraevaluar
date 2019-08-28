@@ -1,45 +1,65 @@
 #!/bin/bash
 
-source paraevaluar.utils
-
 PARAEVALUAR_HOME=/home/jvinyals/Documents/paraevaluar
 
-function init {
-	${PARAEVALUAR_HOME}/paraevaluar.init
-}
-
-function mkscript {
-	${PARAEVALUAR_HOME}/paraevaluar.mkscript
-}
-
 function help {
-	usage;
+cat >&2 <<EOF
+Usage:	paraevaluar COMMAND
+		COMMAND
+			help
+			init
+			script
+			addfile
+			eval
+			report
+EOF
+}
+
+function init {
+	${PARAEVALUAR_HOME}/paraevaluar.init $@
+}
+
+function script {
+	${PARAEVALUAR_HOME}/paraevaluar.script $@
+}
+
+function evaluate { 
+	${PARAEVALUAR_HOME}/paraevaluar.eval $@
+}
+
+function addfile {
+	${PARAEVALUAR_HOME}/paraevaluar.addfile $@
 }
 
 function parse_command {
 	case $1 in
 		help)
-			shift;
-			COMMAND=help
+			COMMAND="help"
 			;;
-		init)
-			shift;
-			COMMAND=init
+	       	init)
+			COMMAND="init"
 			;;
-		mkscript)
-			shift;
-			COMMAND=mkscript
+		script)
+			COMMAND="script"
 			;;
-		
+		addfile)
+			COMMAND="addfile"
+			;;
+		eval)
+			COMMAND="evaluate"		
+			;;
 		*)
-			error "Unknown command: $1";
+			>&2 echo "Unknown command: $1";
 			;;
 	esac
 }
 
-if [[ $# -lt 1 ]]; then error "paraevaluar needs at least one argument. \nFor more information run: paraevaluar help"; fi
+if [[ $# -lt 1 ]]; then 
+	>&2 echo "paraevaluar needs at least one argument. \nFor more information run: paraevaluar help";
+fi
 
 parse_command $@;
+shift;
 #parse_args $@;
 
-eval ${COMMAND}
+eval ${COMMAND} $@
