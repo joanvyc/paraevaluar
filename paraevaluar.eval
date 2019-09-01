@@ -35,23 +35,89 @@ function create_mpi {
 function create_input {
 	if eval $INPUT_ENABLED;
 	then
-		cp ${PROJECT_NAME}/base ${JOBS_DIR}/$( basename ${INPUT} | rev | cut -d. -f2- | rev );
+		for INPUT in ${INPUT_array};
+		do
+			BASENAME="${BINARY}-$(basename $INPUT | rev | cut -d'.' -f2- | rev)"
+			OUTPUT=${BASENAME}.out
+
+			(
+			echo "s|##binary##|${BINARY}|g;"
+
+			echo "s|##input##|${INPUT}|g;"
+			echo "s|##output##|${OUTPUT}|g;"
+
+			echo "s|&gt;|>|g;"
+
+			local TIMING_ENABLED=false;
+			if eval $TIMING_ENABLED;
+			then
+				echo "s|^|/usr/bin/time --format=%e --output=${BASENAME}.timing |g;";
+			fi
+			) > ${PROJECT_NAME}/command.sed
+
+			\cp ${PROJECT_NAME}/base ${JOBS_DIR}/${BASENAME}
+			sed -i -f "${PROJECT_NAME}/command.sed" ${JOBS_DIR}/${BASENAME};
+		done				
+		\rm -f ${base};
 	else
 		INPUT="base";
-		cp ${PROJECT_NAME}/base ${JOBS_DIR}/${INPUT};
+		\mv ${PROJECT_NAME}/base ${JOBS_DIR}/${INPUT};
 	fi
 }
 
-function complete_and_run {
+function create_directories {
 	for i in ${JOBS_DIR}/*;
 	do
-		mkdir -p `basename $i`;
-		cp ${i} jobscript.sh;
-		sbatch jobscript.sh;
+		local WDIR=${PROJECT_NAME}/runs/`basename $i`;
+		mkdir -p $WDIR;
+		cp ${i} $WDIR/jobscript.sh;
+		chmod +x $WDIR/jobscript.sh;
+		if ! [ -z "$(ls -A ${PROJECT_NAME}/files)" ];
+		then
+			cp -rf ${PROJECT_NAME}/files/* $WDIR;
+		fi
 	done
 }
+
+function run_configurations {
+	local CDIR=`pwd -P`
+
+	for i in ${PROJECT_NAME}/runs/*;
+	do
+		echo -n "Entering $i... "
+		cd $i;
+		echo "done."
+
+		if $JOB_SCRIPT_ENABLED;
+		then
+			case $JOB_MANAGER in
+				"slurm")
+					sbatch jobscript.sh
+					;;
+				*)
+					cd $CDIR;
+					continue;
+					;;
+			esac
+		else
+			echo -n "Running script... "
+			./jobscript.sh > jobscript.out
+			echo "done."
+		fi
+
+		echo -n "Leaving $i... "
+		cd $CDIR;
+		echo "done."
+	done
+
+	cd $CDIR;
+}
+
+export BINARY=`xmlstarlet sel -t -v /evaluate/binary paraevaluar.xml | awk 'length($0)!=0 {gsub(" ", ""); gsub("\t", ""); gsub(",", " ") ;print $0;}'`
 
 create_input;
 create_mpi;
 create_omp;
-#complete_and_run;
+
+create_directories;
+run_configurations;

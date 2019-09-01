@@ -7,30 +7,32 @@
         </project>
 
 	<command-format>
-		mpirun -np ${SLURM_NRASKS} ##binary## -i ##input## -o ##output##
+		##binary## ##input## &gt; ##output##
 	</command-format>
 
 	<binary path=".">
-		pi.3
+		pi.O3
 	</binary>
 
         <input enabled="yes">
-                ./H2O-64.inp
+                1000, 5000, 10000, 20000
         </input>
 
 	<enviroment>
-		<var name="LD_LIBRARY_PATH" append=":" >/usr/bin/lib</var>
+		<!-- <var name="LD_LIBRARY_PATH" append=":" >/usr/bin/lib</var> -->
+		<!--
                 <modules enabled="yes">
 			<module>gcc/8.2.0</module>
 			<module>openmpi/3.1.2</module>
                 </modules>
+		-->
 	</enviroment>
 
-        <job enabled="yes">
+        <job enabled="no">
                 <slurm enabled="yes"/>
         </job>
 
-        <mpi enabled="yes">
+        <mpi enabled="no">
                 <ranks function="*2">
 			1,2-64,256
                 </ranks>
@@ -42,8 +44,8 @@
                 </threads>
         </openmp>
 
-	<timing enabled="no">
-		<time enabled="no"></time>
+	<timing enabled="yes">
+		<time enabled="yes"></time>
 	</timing>
 
 	<profiling enabled="no">
@@ -55,6 +57,7 @@
         </extrae>
 
         <bsc_tools enabled="no">
+                <paramedir enabled="no"> </paramedir>
                 <dimemas enabled="no"> </dimemas>
                 <clustering enabled="no"></clustering>
                 <tracking enabled="no"></tracking>

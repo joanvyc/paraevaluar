@@ -15,13 +15,6 @@ then
 
 echo -e "#!/bin/bash\n" > ${BASE_SCRIPT}
 
-export JOB_SCRIPT_ENABLED=$(
-		xmlstarlet sel -t -m "/evaluate/job" \
-			--if   '@enabled="yes"' -o "true"  -n \
-			--elif '@enabled="no"'  -o "false" -n \
-		paraevaluar.xml
-		)
-
 if eval $JOB_SCRIPT_ENABLED;
 then
 cat >> ${BASE_SCRIPT} << EOF
@@ -65,41 +58,8 @@ then
 	echo "" >> ${BASE_SCRIPT};
 fi
 
+xmlstarlet sel -t -m '/evaluate' -v command-format  -n paraevaluar.xml | sed "s:^\( \|\t\)*::g;" >> ${BASE_SCRIPT}
 
-BASENAME=$(basename $INPUT | rev | cut -d'.' -f2- | rev)
-OUTPUT=${BASENAME}.out
-
-export BINARY=`xmlstarlet sel -t -v /evaluate/binary paraevaluar.xml | awk 'length($0)!=0 {gsub(" ", ""); gsub("\t", ""); gsub(",", " ") ;print $0;}'`
-
-cat << EOF
-replacing spaces
-replacing ##binary## for $BINARY
-replacing ##input##  for $INPUT
-replacing ##output## for $OUTPUT
-EOF
-
-cat > "${PROJECT_NAME}/command.sed" << EOF
-s:^\( \|\t\)*::g;
-
-s|##binary##|${BINARY}|g;
-
-s|##input##|${INPUT}|g;
-s|##output##|${OUTPUT}|g;
-
-s|&gt;|>|g;
-
-EOF
-
-if TIMING ENABLED;
-then
-cat >> "${PROJECT_NAME}/command.sed" << EOF
-s|^|/usr/bin/time --format=%e --output=${BASENAME}.timing |g;
-
-EOF
-
-xmlstarlet sel -t -m '/evaluate' -v command-format  -n paraevaluar.xml | sed -f "${PROJECT_NAME}/command.sed" >> ${BASE_SCRIPT}
-echo "" >> ${BASE_SCRIPT}
+vim -S ${PROJECT_NAME}/.vimrc ${BASE_SCRIPT}
 
 fi
-
-vim -S ${PROJECT_NAME}/.vimrc ${BASE_SCRIPT};
