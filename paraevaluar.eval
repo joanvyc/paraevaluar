@@ -1,6 +1,6 @@
 #!/bin/bash
 
-source paraevaluar.utils 
+source ${PARAEVALUAR_HOME}/paraevaluar.utils "eval"
 
 function create_omp {
 	if eval $OMP_ENABLED;

@@ -1,6 +1,8 @@
 #!/bin/bash
 
-PARAEVALUAR_HOME=/home/jvinyals/Documents/paraevaluar
+export PARAEVALUAR_HOME="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd -P )"
+
+source ${PARAEVALUAR_HOME}/paraevaluar.utils "base"
 
 function help {
 cat >&2 <<EOF

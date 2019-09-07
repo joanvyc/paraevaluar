@@ -1,11 +1,12 @@
 #!/bin/bash
 
-source paraevaluar.utils 
+source ${PARAEVALUAR_HOME}/paraevaluar.utils "script"
 
 if ! [[ -d ${PROJECT_NAME} ]];
 then
 	>&2 echo "The project ${PROJECT_NAME} does not exists"
 	>&2 echo "For more information run: paraevaluar help"
+  exit 1;
 fi
 
 BASE_SCRIPT=${PROJECT_NAME}/base
@@ -26,7 +27,7 @@ fi
 
 echo "# Enviroment" >> ${BASE_SCRIPT}
 xmlstarlet sel -t -m '/evaluate/enviroment/var' \
-	-i '@append=""' \
+	--if '@append=""' \
 		-v "concat(@name,'=',self::var)" -n \
 	--else \
 		-v "concat(@name,'=$',@name,@append,self::var)" -n \

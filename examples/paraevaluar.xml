@@ -1,68 +1,68 @@
 <?xml version='1.0'?>
 
 <evaluate enabled="yes" home="" >
-            
-        <project>
-                Example
-        </project>
 
-	<command-format>
-		##binary## ##input## &gt; ##output##
-	</command-format>
+  <project>
+    Example
+  </project>
 
-	<binary path=".">
-		pi.O3
-	</binary>
+  <command-format>
+    ##binary## ##input## &gt; ##output##
+  </command-format>
 
-        <input enabled="yes">
-                1000, 5000, 10000, 20000
-        </input>
+  <binary path=".">
+    pi.O1,pi.O2,pi.O3
+  </binary>
 
-	<enviroment>
-		<!-- <var name="LD_LIBRARY_PATH" append=":" >/usr/bin/lib</var> -->
-		<!--
-                <modules enabled="yes">
-			<module>gcc/8.2.0</module>
-			<module>openmpi/3.1.2</module>
-                </modules>
-		-->
-	</enviroment>
+  <input enabled="yes">
+    1000, 5000, 10000, 20000
+  </input>
 
-        <job enabled="no">
-                <slurm enabled="yes"/>
-        </job>
+  <enviroment>
+    <!-- <var name="LD_LIBRARY_PATH" append=":" >/usr/bin/lib</var> -->
+    <!--
+    <modules enabled="yes">
+      <module>gcc/8.2.0</module>
+      <module>openmpi/3.1.2</module>
+    </modules>
+    -->
+  </enviroment>
 
-        <mpi enabled="no">
-                <ranks function="*2">
-			1,2-64,256
-                </ranks>
-        </mpi>
+  <job enabled="no">
+    <slurm enabled="yes"/>
+  </job>
 
-        <openmp enabled="no">
-                <threads function="+2">
-			1-32
-                </threads>
-        </openmp>
+  <mpi enabled="no">
+    <ranks function="*2">
+      1,2-64,256
+    </ranks>
+  </mpi>
 
-	<timing enabled="yes">
-		<time enabled="yes"></time>
-	</timing>
+  <openmp enabled="no">
+    <threads function="+2">
+      1-32
+    </threads>
+  </openmp>
 
-	<profiling enabled="no">
-		<perf enabled="no"></perf>
-	</profiling>
+  <timing enabled="yes">
+    <time enabled="yes"></time>
+  </timing>
 
-        <extrae enabled="no">
-                ./extrae.xml
-        </extrae>
+  <profiling enabled="no">
+    <perf enabled="no"></perf>
+  </profiling>
 
-        <bsc_tools enabled="no">
-                <paramedir enabled="no"> </paramedir>
-                <dimemas enabled="no"> </dimemas>
-                <clustering enabled="no"></clustering>
-                <tracking enabled="no"></tracking>
-                <folding enabled="no"></folding>
-                <modelfactors enable="no"></modelfactors>
-        </bsc_tools>
+  <extrae enabled="no">
+    ./extrae.xml
+  </extrae>
+
+  <bsc_tools enabled="no">
+    <paramedir enabled="no"> </paramedir>
+    <dimemas enabled="no"> </dimemas>
+    <clustering enabled="no"></clustering>
+    <tracking enabled="no"></tracking>
+    <folding enabled="no"></folding>
+    <modelfactors enable="no"></modelfactors>
+  </bsc_tools>
 
 </evaluate>
