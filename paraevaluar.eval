@@ -3,6 +3,7 @@
 source ${PARAEVALUAR_HOME}/paraevaluar.utils "eval"
 
 function create_omp {
+  eval $_PARAEVALUAR_DEBUG_ && echo -n "Creating OMP... "
 	if eval $OMP_ENABLED;
 	then
 		for base in ${JOBS_DIR}/*;
@@ -15,9 +16,11 @@ function create_omp {
 			\rm -f ${base};
 		done
 	fi
+  eval $_PARAEVALUAR_DEBUG_ && echo "done"
 }
 
 function create_mpi {
+  eval $_PARAEVALUAR_DEBUG_ && echo -n "Creating MPI... "
 	if eval $MPI_ENABLED
 	then
 		for base in ${JOBS_DIR}/*;
@@ -30,38 +33,39 @@ function create_mpi {
 			\rm -f ${base};
 		done
 	fi
+  eval $_PARAEVALUAR_DEBUG_ && echo "done"
 }
 
 function create_input {
 	if eval $INPUT_ENABLED;
 	then
-		for INPUT in ${INPUT_array};
-		do
-			BASENAME="${BINARY}-$(basename $INPUT | rev | cut -d'.' -f2- | rev)"
-			OUTPUT=${BASENAME}.out
+    for BINARY in $BINARY_array;
+    do
+      for INPUT in ${INPUT_array};
+      do
+        BASENAME="${BINARY}-$(basename $INPUT | rev | cut -d'.' -f2- | rev)"
+        OUTPUT=${BASENAME}.out
 
-			(
-			echo "s|##binary##|${BINARY}|g;"
+        (
+        echo "s|##binary##|${BINARY}|g;"
 
-			echo "s|##input##|${INPUT}|g;"
-			echo "s|##output##|${OUTPUT}|g;"
+        echo "s|##input##|${INPUT}|g;"
+        echo "s|##output##|${OUTPUT}|g;"
 
-			echo "s|&gt;|>|g;"
+        echo "s|&gt;|>|g;"
+        ) > ${PROJECT_NAME}/command.sed
 
-			local TIMING_ENABLED=false;
-			if eval $TIMING_ENABLED;
-			then
-				echo "s|^|/usr/bin/time --format=%e --output=${BASENAME}.timing |g;";
-			fi
-			) > ${PROJECT_NAME}/command.sed
-
-			\cp ${PROJECT_NAME}/base ${JOBS_DIR}/${BASENAME}
-			sed -i -f "${PROJECT_NAME}/command.sed" ${JOBS_DIR}/${BASENAME};
-		done				
+        \cp ${PROJECT_NAME}/base ${JOBS_DIR}/${BASENAME}
+        sed -i -f "${PROJECT_NAME}/command.sed" ${JOBS_DIR}/${BASENAME};
+      done				
+    done
 		\rm -f ${base};
 	else
-		INPUT="base";
-		\mv ${PROJECT_NAME}/base ${JOBS_DIR}/${INPUT};
+    for BINARY in $BINARY_array;
+    do
+      INPUT="${BINARY}-base";
+      \cp ${PROJECT_NAME}/base ${JOBS_DIR}/${INPUT};
+    done
 	fi
 }
 
@@ -113,8 +117,7 @@ function run_configurations {
 	cd $CDIR;
 }
 
-export BINARY=`xmlstarlet sel -t -v /evaluate/binary paraevaluar.xml | awk 'length($0)!=0 {gsub(" ", ""); gsub("\t", ""); gsub(",", " ") ;print $0;}'`
-
+create_binaries;
 create_input;
 create_mpi;
 create_omp;

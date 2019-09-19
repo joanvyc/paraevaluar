@@ -3,6 +3,8 @@
 
 SOURCE=${1}
 
+export _PARAEVALUAR_DEBUG_='false'
+
 if [[ -x paraevaluar.xml ]];
 then
 	echo "ERROR: could not find file: paraevaluar.xml";
@@ -26,9 +28,10 @@ function fetchInputInfo {
 }
 
 function fetchMpiInfo {
+  eval $_PARAEVALUAR_DEBUG_ && echo -n "Loading MPI info... "
   export MPI_ENABLED=`                    \
   xmlstarlet sel -t -m "/evaluate/mpi"    \
-    --if   '@enabled="yes"' -o "true" -n  \
+    --if   '@enabled="yes"' -o "true"  -n \
     --elif '@enabled="no"'  -o "false" -n \
     paraevaluar.xml`
   if eval $MPI_ENABLED;
@@ -40,15 +43,19 @@ function fetchMpiInfo {
     do
       if [[ "$MPI_RANKS" =~ [0-9]+-[0-9]+ ]];
       then
-        FUNCTION=`xmlstarlet sel -t -m /evaluate/mpi/ranks -v @function paraevaluar.xml`
+        FUNCTION=`xmlstarlet sel -t -m /evaluate/mpi/ranks -v @function -n paraevaluar.xml`
         init=`echo "$MPI_RANKS" | cut -d- -f 1`
         fini=`echo "$MPI_RANKS" | cut -d- -f 2`
 
-        while [[ $init -lt $fini ]]; do MPI_RANKS_unrolled="$MPI_RANKS_unrolled $init"; init=`echo $init $FUNCTION | bc`; done
+        while [[ $init -lt $fini ]]; do 
+          MPI_RANKS_unrolled="$MPI_RANKS_unrolled $init";
+          init=`echo "$init $FUNCTION" | bc`; 
+        done
         export MPI_RANKS_array=`echo $MPI_RANKS_array | sed "s/$MPI_RANKS/$MPI_RANKS_unrolled $fini/g"`
       fi
     done
   fi
+  eval $_PARAEVALUAR_DEBUG_ && echo "done"
 }
 
 function fetchOmpInfo {
@@ -82,6 +89,11 @@ fi
 }
 
 function fetchScriptInfo {
+
+  export BINARY_array=`                   \
+    xmlstarlet sel -t -v /evaluate/binary \
+    paraevaluar.xml | awk 'length($0)!=0 {gsub(" ", ""); gsub("\t", ""); gsub(",", " ") ;print $0;}'`
+
   export JOB_SCRIPT_ENABLED=`             \
     xmlstarlet sel -t -m "/evaluate/job"  \
     --if   '@enabled="yes"' -o "true"  -n \
@@ -94,6 +106,16 @@ function fetchScriptInfo {
     paraevaluar.xml | head -n 1`
 
   export JOBS_DIR="${PROJECT_NAME}/job-scripts"
+
+  export TIMING_ENABLED=`                    \
+    xmlstarlet sel -t -m "/evaluate/timing"  \
+    --if   '@enabled="yes"' -o "true"  -n    \
+    --elif '@enabled="no"'  -o "false" -n    \
+    paraevaluar.xml`
+}
+
+function get_directory {
+  echo "$@"  
 }
 
 function assert_user {
@@ -151,19 +173,23 @@ function assert_user {
 
 fetchProjectInfo;
 
+if [[ "$SOURCE" == "script" ]];
+then
+  fetchScriptInfo;
+fi
+
 if  [[ "$SOURCE" == "eval" ]];
 then
-  fetchProjectInfo;
+  fetchScriptInfo;
   fetchInputInfo;
   fetchMpiInfo;
   fetchOmpInfo;
 fi
 
-if [[ "$SOURCE" == "script" ]];
+if [[ $SOURCE == "report" ]];
 then
-  fetchProjectInfo;
   fetchScriptInfo;
+  fetchInputInfo;
+  fetchMpiInfo;
+  fetchOmpInfo;
 fi
-
-
-  

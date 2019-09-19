@@ -29,7 +29,11 @@ function evaluate {
 	${PARAEVALUAR_HOME}/paraevaluar.eval $@
 }
 
-function addfile {
+function report { 
+	${PARAEVALUAR_HOME}/paraevaluar.report $@
+}
+
+function add {
 	${PARAEVALUAR_HOME}/paraevaluar.addfile $@
 }
 
@@ -44,11 +48,14 @@ function parse_command {
 		script)
 			COMMAND="script"
 			;;
-		addfile)
-			COMMAND="addfile"
+		add)
+			COMMAND="add"
 			;;
 		eval)
 			COMMAND="evaluate"		
+			;;
+		report)
+			COMMAND="report"		
 			;;
 		*)
 			>&2 echo "Unknown command: $1";

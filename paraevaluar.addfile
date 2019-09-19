@@ -2,10 +2,14 @@
 
 source ${PARAEVALUAR_HOME}/paraevaluar.utils "addfile"
 
-if ! [[ -f $1 ]];
-then
-	echo "ERROR: file not found: $1";
-	exit 1;
-else
-	cp -rf $1 -t ${PROJECT_NAME}/files/;
-fi
+while [[ $# -gt 0 ]];
+do
+  if ! [[ -f $1 ]];
+  then
+    echo "ERROR: file not found: $1";
+    exit 1;
+  else
+    cp -rf $1 -t ${PROJECT_NAME}/files/;
+    shift;
+  fi
+done

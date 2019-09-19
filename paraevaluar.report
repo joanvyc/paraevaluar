@@ -2,3 +2,111 @@
 
 source ${PARAEVALUAR_HOME}/paraevaluar.utils "report"
 
+function gather_information {
+  get_directory $@;
+}
+
+function push_order {
+  local AUX_ORDER=$ORDER;
+  ORDER=( "${HEADS[-1]}" )
+  HEADS=( ${HEADS/$HEADS[-1]} ) 
+  for i in $AUX_ORDER;
+  do
+    ORDER+=( "$i" );
+  done
+}
+
+function run_next_loop {
+  HEADS+=( "${ORDER[0]}" );
+  local TAIL=${ORDER[@]:1}
+
+  ORDER=()
+  for i in $TAIL;
+  do
+    ORDER+=( "$i" )
+  done
+  echo ${ORDER[@]}
+  over_${HEADS[-1]};
+}
+
+function over_binary {
+  if [[ ${#ORDER[@]} -gt 0 ]];
+  then
+    for BINARY in $BINARY_array;
+    do
+      echo "--- BINARY ---"
+      run_next_loop;
+      push_order
+    done
+  else
+    for BINARY in $BINARY_array;
+    do
+      gather_information "binary=$BINARY" "input=$INPUT" "mpi=$MPI" "omp=$OMP"
+    done
+    push_order
+  fi
+  echo "";
+}
+
+function over_input {
+  if [[ ${#ORDER[@]}  -gt 0 ]];
+  then
+    for INPUT in $INPUT_array;
+    do
+      echo "--- INPUT ---"
+      run_next_loop;
+      push_order
+    done
+  else
+    for INPUT in $INPUT_array;
+    do
+      gather_information "binary=$BINARY" "input=$INPUT" "mpi=$MPI" "omp=$OMP"
+    done
+    push_order
+  fi
+  echo "";
+}
+
+function over_mpi {
+  if [[ ${#ORDER[@]} -gt 0 ]];
+  then
+    for MPI in $MPI_RANKS_array;
+    do
+      echo "--- MPI ---"
+      run_next_loop;
+      push_order
+    done
+  else
+    for MPI in $MPI_RANKS_array;
+    do
+      gather_information "binary=$BINARY" "input=$INPUT" "mpi=$MPI" "omp=$OMP"
+    done
+    push_order
+  fi
+  echo "";
+}
+
+function over_omp {
+  if [[ ${#ORDER[@]} -gt 0 ]];
+  then
+    for OMP in $OMP_THREADS_array;
+    do
+      run_next_loop;
+      push_order;
+    done
+  else
+    for OMP in $OMP_THREADS_array;
+    do
+      gather_information "binary=$BINARY" "input=$INPUT" "mpi=$MPI" "omp=$OMP"
+    done
+    push_order
+  fi
+  echo "";
+}
+
+HEADS=()
+ORDER=( "binary" "input" "mpi" )
+
+run_next_loop;
+
+

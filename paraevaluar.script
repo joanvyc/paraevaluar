@@ -49,17 +49,18 @@ export MODULES_ENABLED=$(
 if eval $MODULES_ENABLED;
 then
 	echo "# Modules" >> ${BASE_SCRIPT};
-	xmlstarlet sel -t -m '/evaluate/enviroment/modules' -m module -v "concat('module load ', self::module)"  -n paraevaluar.xml >> ${BASE_SCRIPT}
-#	MODULES=$(  | awk 'length($0)!=0 {gsub(" ", ""); gsub("\t", ""); gsub(",", " ");  print $0;}' )
-#	MODULES=$( echo ${MODULES} | awk '{ for (i=NF; i>1; i--) printf("%s ",$i); print $1; }' )
-#	for module in ${MODULES};
-#	do
-#		echo "module load ${module}"  >> ${BASE_SCRIPT};
-#	done
+	xmlstarlet sel -t                                         \
+    -m '/evaluate/enviroment/modules'                       \
+    -m module -v "concat('module load ', self::module)" -n  \
+    paraevaluar.xml >> ${BASE_SCRIPT}
 	echo "" >> ${BASE_SCRIPT};
 fi
 
-xmlstarlet sel -t -m '/evaluate' -v command-format  -n paraevaluar.xml | sed "s:^\( \|\t\)*::g;" >> ${BASE_SCRIPT}
+xmlstarlet sel -t -m '/evaluate' -v command-format  -n paraevaluar.xml  \
+  | sed "s:^\( \|\t\)*::g;"                                             \
+  | awk 'length!=0 {print $0}'                                          \
+  | sed 's|^|/usr/bin/time -f "%e" -o timing |g;'                       \
+  >> ${BASE_SCRIPT}
 
 vim -S ${PROJECT_NAME}/.vimrc ${BASE_SCRIPT}
 
