@@ -1,0 +1,68 @@
+<?xml version='1.0'?>
+
+<evaluate enabled="yes" home="" >
+
+  <project>
+    Example
+  </project>
+
+  <command-format>
+    ##binary## ##input## &gt; ##output##
+  </command-format>
+
+  <binary path="/home/jvinyals/Documents/paraevaluar/examples">
+    pi.O1,pi.O2,pi.O3
+  </binary>
+
+  <input enabled="yes">
+    1000, 5000, 10000, 20000
+  </input>
+
+  <enviroment>
+    <!-- <var name="LD_LIBRARY_PATH" append=":" >/usr/bin/lib</var> -->
+    <!--
+    <modules enabled="yes">
+      <module>gcc/8.2.0</module>
+      <module>openmpi/3.1.2</module>
+    </modules>
+    -->
+  </enviroment>
+
+  <job enabled="no">
+    <slurm enabled="yes"/>
+  </job>
+
+  <mpi enabled="yes">
+    <ranks function="*2">
+      1,2-64,256
+    </ranks>
+  </mpi>
+
+  <openmp enabled="no">
+    <threads function="+2">
+      1-32
+    </threads>
+  </openmp>
+
+  <timing enabled="yes">
+    <time enabled="yes"></time>
+  </timing>
+
+  <profiling enabled="no">
+    <perf enabled="no"></perf>
+  </profiling>
+
+  <extrae enabled="no">
+    ./extrae.xml
+  </extrae>
+
+  <bsc_tools enabled="no">
+    <paramedir enabled="no"> </paramedir>
+    <dimemas enabled="no"> </dimemas>
+    <clustering enabled="no"></clustering>
+    <tracking enabled="no"></tracking>
+    <folding enabled="no"></folding>
+    <modelfactors enable="no"></modelfactors>
+  </bsc_tools>
+
+</evaluate>
