@@ -7,64 +7,48 @@ Paraevaluar is a performance analysis script that allows developers to compare a
 
 ## Usage
 ```
-Usage:	paraevaluar [OPTIONS]... program
-	OPTIONS:
-		-N|--iterations ITERATIONS	specify the number of iterations each binary will be executeds.
-		-i|--ignore-golden		don't abort when output doesn't match golden output
-		-prefix PREFIX			specify the path of th program (default $PWD)
-		-d|--directory EVALDIR		sets the paraevaluar working directory to EVALDIR
-		-name NAME			sets to the execution the alias NAME
-		-original			forces the program to be treated as the original
-		-t|--time-path PATH		to specify the path of time (default /usr/bin/time)
-		-v|--verbose			verbose
-		-report [REPORT OPTIONS]	displays the report of the evaluations (default REPORT OPTIONS: TABLE)
-		-o|--output FILE		appends the result of the evaluation to the FILE
-		--clean				deletes all evaldir in the current directory
-		-h|--help			print this usage
-	REPORT OPTIONS:
-		TABLE	displays a table
-		PLOT	displays a speedup plot
-
+Usage:	paraevaluar [GLOBAL_OPTIONS] <command> [OPTIONS]
+	GLOBAL_OPTIONS:
+		-f | --file  <file> specify <file> as the config file. (default ./paraevaluar.xml) [unimplemented]
+	commands:
+		init
+		script
+		add
+		eval
+		report
 ```
+### Init command
+The init command initialises an empty project inside the current folder based on the `paraevaluar.xml` file.	
+```
+Usage:	paraevaluar init [OPTIONS]
+	OPTIONS:
+		--help	prints this message and exits	
+```
+### Script command
+The script generates the template script for the eval stage based on the `paraevaluar.xml` file.
+```
+Usage:	paraevaluar script [OPTIONS]
+	OPTIONS:
+		--help	prints this message and exit
+		-e | --editor when the script is generated, open up an editor to edit the script
+```
+### Add command
+The add command copies the given files to the execution directory.
+```
+Usage:	paraevaluar add <file>...
+```
+### Eval command
+The eval command executes the script for each possible configuration given the `paraevaluar.xml` file.
+```
+Usage:	paraevaluar eval
+```
+
+### Report command
+The report command is unimplemented.
+
 ## Dependencies
-The dependencies needed are coreutils, gawk, time, groff-base, bc, gnuplot
-
-Other dependencies for extended features:
-In order to plot data gnuplot is required to be installed.
-
+The dependencies needed are coreutils, gawk, time, bc, xmlstarlet
 
 ## Example
-
-In the examples folder, first compile the code using different gcc optimitzation levels.
-```
-make all
-```
-Then run the command to evaluate the code, execute 4 times each binary, pass the argument 3333 to the programs.
-```
-../paraevaluar -N 4 pi.O0 3333
-../paraevaluar -N 4 pi.O1 3333
-../paraevaluar -N 4 pi.O2 3333
-../paraevaluar -N 4 pi.O3 3333
-../paraevaluar -N 4 pi.Ofast 3333
-```
-Get the results of the execution.
-```
-../paraevaluar --report TABLE PLOT
-```
-We get the following output and a beautifull plot:
-```
-Results for pi.O0:
-+---------+------+------+--------+----------+--------+--------+--------+------------+
-|Program  | MaxE | MinE | AvgE   | SpeedUpE | MaxCPU | MinCPU | AvgCPU | SpeedUpCPU |
-+---------+------+------+--------+----------+--------+--------+--------+------------+
-|pi.O0    | 0.18 | 0.17 | 0.1733 | -        | 0.18   | 0.17   | 0.1722 | -          |
-+---------+------+------+--------+----------+--------+--------+--------+------------+
-|pi.O1    | 0.09 | 0.09 | 0.0900 | 1.9256   | 0.09   | 0.09   | 0.0894 | 1.9262     |
-+---------+------+------+--------+----------+--------+--------+--------+------------+
-|pi.O2    | 0.06 | 0.06 | 0.0600 | 2.8883   | 0.06   | 0.06   | 0.0588 | 2.9286     |
-+---------+------+------+--------+----------+--------+--------+--------+------------+
-|pi.O3    | 0.06 | 0.06 | 0.0600 | 2.8883   | 0.06   | 0.06   | 0.0596 | 2.8893     |
-+---------+------+------+--------+----------+--------+--------+--------+------------+
-|pi.Ofast | 0.06 | 0.06 | 0.0600 | 2.8883   | 0.06   | 0.06   | 0.0592 | 2.9088     |
-+---------+------+------+--------+----------+--------+--------+--------+------------+
+TODO when report option is implemented
 ```
